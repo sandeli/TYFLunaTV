@@ -11,6 +11,23 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    version: "4.3.5",
+    date: "2025-08-29",
+    added: [
+      "新增Chromecast投屏功能：支持将视频内容投射到Chromecast设备",
+      "Chromecast智能浏览器检测：仅在真正的Chrome浏览器中显示Chromecast按钮",
+      "排除厂商浏览器显示Chromecast：自动识别并排除OPPO、小米、华为、三星等厂商浏览器"
+    ],
+    changed: [
+      "优化弹幕控制按钮显示策略：只显示配置按钮，隐藏切换按钮和发射器以节省空间"
+    ],
+    fixed: [
+      "修复小屏幕设备控制栏按钮被推出画面的问题：优化弹幕插件控制按钮占用空间",
+      "修复移动端弹幕配置按钮不显示的问题：调整width参数确保移动端正确显示",
+      "修复OPPO等厂商浏览器错误显示Chromecast按钮的问题：增加OppoBrowser和HeyTapBrowser识别"
+    ]
+  },
+  {
     version: "4.3.4",
     date: "2025-08-28",
     added: [
