@@ -182,6 +182,8 @@ export default function artplayerPluginChromecast(option) {
       hasOPR: /OPR/i.test(userAgent),
       hasSamsung: /SamsungBrowser/i.test(userAgent),
       hasOPPO: /OPPO/i.test(userAgent),
+      hasOppoBrowser: /OppoBrowser/i.test(userAgent),
+      hasHeyTapBrowser: /HeyTapBrowser/i.test(userAgent),
       hasColorOS: /ColorOS/i.test(userAgent),
       hasOneplus: /OnePlus/i.test(userAgent),
       hasXiaomi: /Xiaomi/i.test(userAgent),
@@ -199,6 +201,8 @@ export default function artplayerPluginChromecast(option) {
                     !/OPR/i.test(userAgent) &&      // 排除Opera
                     !/SamsungBrowser/i.test(userAgent) && // 排除三星浏览器
                     !/OPPO/i.test(userAgent) &&     // 排除OPPO浏览器
+                    !/OppoBrowser/i.test(userAgent) && // 排除OppoBrowser
+                    !/HeyTapBrowser/i.test(userAgent) && // 排除HeyTapBrowser (OPPO新版浏览器)
                     !/ColorOS/i.test(userAgent) &&  // 排除ColorOS浏览器
                     !/OnePlus/i.test(userAgent) &&  // 排除OnePlus浏览器
                     !/Xiaomi/i.test(userAgent) &&   // 排除小米浏览器
