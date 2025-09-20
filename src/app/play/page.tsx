@@ -3074,34 +3074,12 @@ function PlayPageClient() {
                   visibility: visible !important;
                 }
 
-                /* 全屏模式下弹幕菜单hover优化显示（仅在非拖拽状态） */
-                .art-fullscreen:not([data-dragging="true"]) .artplayer-plugin-danmuku .apd-config:hover .apd-config-panel,
-                .art-fullscreen-web:not([data-dragging="true"]) .artplayer-plugin-danmuku .apd-config:hover .apd-config-panel,
-                .art-fullscreen:not([data-dragging="true"]) .artplayer-plugin-danmuku .apd-style:hover .apd-style-panel,
-                .art-fullscreen-web:not([data-dragging="true"]) .artplayer-plugin-danmuku .apd-style:hover .apd-style-panel {
-                  opacity: 1 !important;
-                  pointer-events: auto !important;
-                  visibility: visible !important;
-                  transition: opacity 0.15s ease-in-out !important;
-                }
-
-                /* 仅在非全屏模式下实际拖拽进度条时才禁用弹幕hover */
-                .artplayer[data-dragging="true"]:not(.art-fullscreen):not(.art-fullscreen-web) .artplayer-plugin-danmuku .apd-config:hover .apd-config-panel,
-                .artplayer[data-dragging="true"]:not(.art-fullscreen):not(.art-fullscreen-web) .artplayer-plugin-danmuku .apd-style:hover .apd-style-panel {
+                /* 仅在实际拖拽进度条时才禁用弹幕hover */
+                .artplayer[data-dragging="true"] .artplayer-plugin-danmuku .apd-config:hover .apd-config-panel,
+                .artplayer[data-dragging="true"] .artplayer-plugin-danmuku .apd-style:hover .apd-style-panel {
                   opacity: 0 !important;
                   pointer-events: none !important;
                   visibility: hidden !important;
-                }
-
-                /* 全屏模式下拖拽时立即隐藏弹幕菜单，避免干扰进度条操作 */
-                .artplayer.art-fullscreen[data-dragging="true"] .artplayer-plugin-danmuku .apd-config:hover .apd-config-panel,
-                .artplayer.art-fullscreen-web[data-dragging="true"] .artplayer-plugin-danmuku .apd-config:hover .apd-config-panel,
-                .artplayer.art-fullscreen[data-dragging="true"] .artplayer-plugin-danmuku .apd-style:hover .apd-style-panel,
-                .artplayer.art-fullscreen-web[data-dragging="true"] .artplayer-plugin-danmuku .apd-style:hover .apd-style-panel {
-                  opacity: 0 !important;
-                  pointer-events: none !important;
-                  visibility: hidden !important;
-                  transition: opacity 0.1s ease-out !important;
                 }
 
                 /* 确保进度条层级足够高，避免被弹幕面板遮挡 */
@@ -3134,23 +3112,10 @@ function PlayPageClient() {
             const handleProgressMouseDown = (event: MouseEvent) => {
               // 只有左键才开始拖拽检测
               if (event.button === 0) {
+                isDraggingProgress = true;
                 const artplayer = document.querySelector('.artplayer') as HTMLElement;
-                const isFullscreen = artplayer?.classList.contains('art-fullscreen') ||
-                                    artplayer?.classList.contains('art-fullscreen-web');
-
-                if (isFullscreen) {
-                  // 全屏模式下延迟50ms避免误触发
-                  setTimeout(() => {
-                    if (event.buttons === 1) {
-                      isDraggingProgress = true;
-                      artplayer?.setAttribute('data-dragging', 'true');
-                    }
-                  }, 50);
-                } else {
-                  isDraggingProgress = true;
-                  if (artplayer) {
-                    artplayer.setAttribute('data-dragging', 'true');
-                  }
+                if (artplayer) {
+                  artplayer.setAttribute('data-dragging', 'true');
                 }
               }
             };
