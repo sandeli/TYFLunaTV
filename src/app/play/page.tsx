@@ -3058,35 +3058,67 @@ function PlayPageClient() {
               const style = document.createElement('style');
               style.id = 'danmaku-drag-fix';
               style.textContent = `
-                /* 仅在拖拽状态时禁用弹幕hover */
-                .artplayer[data-dragging="true"] .artplayer-plugin-danmuku .apd-config:hover .apd-config-panel,
-                .artplayer[data-dragging="true"] .artplayer-plugin-danmuku .apd-style:hover .apd-style-panel {
-                  opacity: 0 !important;
-                  pointer-events: none !important;
-                }
-                
-                /* 核心修复：确保进度条在弹幕面板上方，或让面板不拦截进度条点击 */
-                .art-progress {
-                  position: relative;
-                  z-index: 999 !important;
-                }
-                
-                /* 弹幕面板pointer-events精确控制 - 只有内容区域可点击，面板背景不拦截 */
-                .artplayer-plugin-danmuku .apd-config-panel {
-                  pointer-events: none !important;
-                }
-                
-                .artplayer-plugin-danmuku .apd-style-panel {
-                  pointer-events: none !important;
-                }
-                
-                /* 只有内容区域可以接收点击事件 */
-                .artplayer-plugin-danmuku .apd-config-panel-inner,
-                .artplayer-plugin-danmuku .apd-style-panel-inner {
+                /* 🔧 修复长时间播放后弹幕菜单hover失效问题 */
+
+                /* 确保控制元素本身可以接收鼠标事件，恢复原生hover机制 */
+                .artplayer-plugin-danmuku .apd-config,
+                .artplayer-plugin-danmuku .apd-style {
                   pointer-events: auto !important;
                 }
-                
-                /* 面板内的具体控件可以点击 */
+
+                /* 恢复ArtPlayer原生的hover显示机制 */
+                .artplayer-plugin-danmuku .apd-config:hover .apd-config-panel,
+                .artplayer-plugin-danmuku .apd-style:hover .apd-style-panel {
+                  opacity: 1 !important;
+                  pointer-events: auto !important;
+                  visibility: visible !important;
+                }
+
+                /* 全屏模式下弹幕菜单hover优化显示（仅在非拖拽状态） */
+                .art-fullscreen:not([data-dragging="true"]) .artplayer-plugin-danmuku .apd-config:hover .apd-config-panel,
+                .art-fullscreen-web:not([data-dragging="true"]) .artplayer-plugin-danmuku .apd-config:hover .apd-config-panel,
+                .art-fullscreen:not([data-dragging="true"]) .artplayer-plugin-danmuku .apd-style:hover .apd-style-panel,
+                .art-fullscreen-web:not([data-dragging="true"]) .artplayer-plugin-danmuku .apd-style:hover .apd-style-panel {
+                  opacity: 1 !important;
+                  pointer-events: auto !important;
+                  visibility: visible !important;
+                  transition: opacity 0.15s ease-in-out !important;
+                }
+
+                /* 仅在非全屏模式下实际拖拽进度条时才禁用弹幕hover */
+                .artplayer[data-dragging="true"]:not(.art-fullscreen):not(.art-fullscreen-web) .artplayer-plugin-danmuku .apd-config:hover .apd-config-panel,
+                .artplayer[data-dragging="true"]:not(.art-fullscreen):not(.art-fullscreen-web) .artplayer-plugin-danmuku .apd-style:hover .apd-style-panel {
+                  opacity: 0 !important;
+                  pointer-events: none !important;
+                  visibility: hidden !important;
+                }
+
+                /* 全屏模式下拖拽时立即隐藏弹幕菜单，避免干扰进度条操作 */
+                .artplayer.art-fullscreen[data-dragging="true"] .artplayer-plugin-danmuku .apd-config:hover .apd-config-panel,
+                .artplayer.art-fullscreen-web[data-dragging="true"] .artplayer-plugin-danmuku .apd-config:hover .apd-config-panel,
+                .artplayer.art-fullscreen[data-dragging="true"] .artplayer-plugin-danmuku .apd-style:hover .apd-style-panel,
+                .artplayer.art-fullscreen-web[data-dragging="true"] .artplayer-plugin-danmuku .apd-style:hover .apd-style-panel {
+                  opacity: 0 !important;
+                  pointer-events: none !important;
+                  visibility: hidden !important;
+                  transition: opacity 0.1s ease-out !important;
+                }
+
+                /* 确保进度条层级足够高，避免被弹幕面板遮挡 */
+                .art-progress {
+                  position: relative;
+                  z-index: 1000 !important;
+                }
+
+                /* 面板背景在非hover状态下不拦截事件，但允许hover检测 */
+                .artplayer-plugin-danmuku .apd-config-panel:not(:hover),
+                .artplayer-plugin-danmuku .apd-style-panel:not(:hover) {
+                  pointer-events: none;
+                }
+
+                /* 面板内的具体控件始终可以交互 */
+                .artplayer-plugin-danmuku .apd-config-panel-inner,
+                .artplayer-plugin-danmuku .apd-style-panel-inner,
                 .artplayer-plugin-danmuku .apd-config-panel .apd-mode,
                 .artplayer-plugin-danmuku .apd-config-panel .apd-other,
                 .artplayer-plugin-danmuku .apd-config-panel .apd-slider,
@@ -3102,10 +3134,23 @@ function PlayPageClient() {
             const handleProgressMouseDown = (event: MouseEvent) => {
               // 只有左键才开始拖拽检测
               if (event.button === 0) {
-                isDraggingProgress = true;
                 const artplayer = document.querySelector('.artplayer') as HTMLElement;
-                if (artplayer) {
-                  artplayer.setAttribute('data-dragging', 'true');
+                const isFullscreen = artplayer?.classList.contains('art-fullscreen') ||
+                                    artplayer?.classList.contains('art-fullscreen-web');
+
+                if (isFullscreen) {
+                  // 全屏模式下延迟50ms避免误触发
+                  setTimeout(() => {
+                    if (event.buttons === 1) {
+                      isDraggingProgress = true;
+                      artplayer?.setAttribute('data-dragging', 'true');
+                    }
+                  }, 50);
+                } else {
+                  isDraggingProgress = true;
+                  if (artplayer) {
+                    artplayer.setAttribute('data-dragging', 'true');
+                  }
                 }
               }
             };
@@ -3143,10 +3188,56 @@ function PlayPageClient() {
             
             // 应用CSS
             addPrecisionCSS();
-            
+
+            // 🔄 添加定期重置机制，防止长时间播放后状态污染
+            const danmakuResetInterval = setInterval(() => {
+              if (!artPlayerRef.current?.plugins?.artplayerPluginDanmuku) {
+                clearInterval(danmakuResetInterval);
+                return;
+              }
+
+              try {
+                // 重置弹幕控件和面板状态
+                const controls = document.querySelectorAll('.artplayer-plugin-danmuku .apd-config, .artplayer-plugin-danmuku .apd-style') as NodeListOf<HTMLElement>;
+                const panels = document.querySelectorAll('.artplayer-plugin-danmuku .apd-config-panel, .artplayer-plugin-danmuku .apd-style-panel') as NodeListOf<HTMLElement>;
+
+                // 强制重置控制元素的事件接收能力
+                controls.forEach(control => {
+                  if (control.style.pointerEvents === 'none') {
+                    control.style.pointerEvents = 'auto';
+                  }
+                });
+
+                // 重置面板状态，但不影响当前hover状态
+                panels.forEach(panel => {
+                  if (!panel.matches(':hover') && panel.style.opacity === '0') {
+                    panel.style.opacity = '';
+                    panel.style.pointerEvents = '';
+                    panel.style.visibility = '';
+                  }
+                });
+
+                console.log('🔄 弹幕菜单hover状态已重置');
+              } catch (error) {
+                console.warn('弹幕状态重置失败:', error);
+              }
+            }, 300000); // 每5分钟重置一次
+
+            // 🚀 立即恢复hover状态（修复当前可能已存在的问题）
+            const immediateRestore = () => {
+              const controls = document.querySelectorAll('.artplayer-plugin-danmuku .apd-config, .artplayer-plugin-danmuku .apd-style') as NodeListOf<HTMLElement>;
+              controls.forEach(control => {
+                control.style.pointerEvents = 'auto';
+              });
+              console.log('🚀 弹幕菜单hover状态已立即恢复');
+            };
+
+            // 立即执行一次恢复
+            setTimeout(immediateRestore, 100);
+
           }, 1500); // 等待弹幕插件加载
         };
-        
+
         // 启用精确修复
         fixDanmakuProgressConflict();
 
