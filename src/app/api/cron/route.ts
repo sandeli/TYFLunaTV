@@ -41,6 +41,7 @@ async function cronJob() {
   await refreshConfig();
   await refreshAllLiveChannels();
   await refreshRecordAndFavorites();
+  await cleanupInactiveUsers();
 }
 
 async function refreshAllLiveChannels() {
@@ -261,5 +262,90 @@ async function refreshRecordAndFavorites() {
     console.log('刷新播放记录/收藏任务完成');
   } catch (err) {
     console.error('刷新播放记录/收藏任务启动失败', err);
+  }
+}
+
+async function cleanupInactiveUsers() {
+  try {
+    const config = await getConfig();
+
+    // 检查是否启用自动清理功能
+    const autoCleanupEnabled = config.UserConfig?.AutoCleanupInactiveUsers ?? false;
+    if (!autoCleanupEnabled) {
+      console.log('⏭️ 自动清理非活跃用户功能已禁用，跳过清理任务');
+      return;
+    }
+
+    console.log('🧹 开始清理非活跃用户...');
+
+    const allUsers = config.UserConfig.Users;
+    const envUsername = process.env.USERNAME;
+    const inactiveUserDays = config.UserConfig?.InactiveUserDays ?? 7; // 默认7天
+
+    const cutoffTime = Date.now() - (inactiveUserDays * 24 * 60 * 60 * 1000);
+    let deletedCount = 0;
+
+    for (const user of allUsers) {
+      try {
+        // 跳过管理员和owner用户
+        if (user.role === 'admin' || user.role === 'owner') {
+          continue;
+        }
+
+        // 跳过环境变量中的用户
+        if (user.username === envUsername) {
+          continue;
+        }
+
+        // 检查用户是否存在于数据库中
+        const userExists = await db.checkUserExist(user.username);
+        if (!userExists) {
+          console.log(`⚠️ 用户 ${user.username} 在配置中存在但数据库中不存在，跳过处理`);
+          continue;
+        }
+
+        // 获取用户统计信息
+        const userStats = await db.getUserPlayStat(user.username);
+        const userCreatedAt = user.createdAt || Date.now(); // 如果没有创建时间，使用当前时间（不会被删除）
+
+        // 检查是否满足删除条件：
+        // 1. 注册时间超过配置的天数
+        // 2. 从未播放过内容（lastPlayTime为0或非常小的值）
+        const isOldEnough = userCreatedAt < cutoffTime;
+        const hasNeverPlayed = userStats.lastPlayTime === 0 || userStats.totalPlays === 0;
+
+        if (isOldEnough && hasNeverPlayed) {
+          console.log(`🗑️ 删除非活跃用户: ${user.username} (注册于: ${new Date(userCreatedAt).toISOString()}, 播放次数: ${userStats.totalPlays}, 设置阈值: ${inactiveUserDays}天)`);
+
+          // 从数据库删除用户数据
+          await db.deleteUser(user.username);
+
+          // 从配置中移除用户
+          const userIndex = config.UserConfig.Users.findIndex(u => u.username === user.username);
+          if (userIndex !== -1) {
+            config.UserConfig.Users.splice(userIndex, 1);
+          }
+
+          deletedCount++;
+        } else {
+          const reason = !isOldEnough ? `注册时间不足${inactiveUserDays}天` : '用户有播放记录';
+          console.log(`✅ 保留用户 ${user.username}: ${reason}`);
+        }
+
+      } catch (err) {
+        console.error(`❌ 处理用户 ${user.username} 时出错:`, err);
+      }
+    }
+
+    // 如果有删除操作，保存更新后的配置
+    if (deletedCount > 0) {
+      await db.saveAdminConfig(config);
+      console.log(`✨ 清理完成，共删除 ${deletedCount} 个非活跃用户`);
+    } else {
+      console.log('✨ 清理完成，无需删除任何用户');
+    }
+
+  } catch (err) {
+    console.error('🚫 清理非活跃用户任务失败:', err);
   }
 }
