@@ -87,7 +87,10 @@
 ### 📦 项目状态
 
 - **注意**：部署后项目为**空壳项目**，**无内置播放源和直播源**，需要自行收集配置
-- **演示站**：[https://lunatv.smone.us](https://lunatv.smone.us) 供短期体验，数据库定时清理
+- **演示站**：
+  - Zeabur 部署：[https://smonetv.zeabur.app](https://smonetv.zeabur.app)
+  - Vercel 部署：[https://lunatv.smone.us](https://lunatv.smone.us)
+  - 供短期体验，数据库定时清理
 
 ### 🚫 传播限制
 
@@ -173,6 +176,7 @@
 - [技术栈](#-技术栈)
 - [部署](#-部署)
   - [Docker 部署（推荐）](#-推荐部署方案kvrocks-存储)
+  - [Zeabur 部署（推荐）](#️-zeabur-部署推荐)
   - [Vercel 部署（无服务器）](#-vercel-部署无服务器)
 - [配置文件](#-配置文件)
 - [环境变量](#-环境变量)
@@ -310,6 +314,102 @@ services:
       - UPSTASH_URL=https://your-instance.upstash.io
       - UPSTASH_TOKEN=your_upstash_token
 ```
+
+### ☁️ Zeabur 部署（推荐）
+
+Zeabur 是一站式云端部署平台，使用预构建的 Docker 镜像可以快速部署，无需等待构建。
+
+**部署步骤：**
+
+1. **添加 KVRocks 服务**（先添加数据库）
+   - 点击 "Add Service" > "Docker Images"
+   - 输入镜像名称：`apache/kvrocks`
+   - 配置端口：`6666` (TCP)
+   - **记住服务名称**（通常是 `apachekvrocks`）
+   - **配置持久化卷（重要）**：
+     * 在服务设置中找到 "Volumes" 部分
+     * 点击 "Add Volume" 添加新卷
+     * Volume ID: `kvrocks-data`（可自定义，仅支持字母、数字、连字符）
+     * Path: `/var/lib/kvrocks/db`
+     * 保存配置
+
+   > 💡 **重要提示**：持久化卷路径必须设置为 `/var/lib/kvrocks/db`（KVRocks 数据目录），这样配置文件保留在容器内，数据库文件持久化，重启后数据不会丢失！
+
+2. **添加 LunaTV 服务**
+   - 点击 "Add Service" > "Docker Images"
+   - 输入镜像名称：`ghcr.io/szemeng76/lunatv:latest`
+   - 配置端口：`3000` (HTTP)
+
+3. **配置环境变量**
+
+   在 LunaTV 服务的环境变量中添加：
+
+   ```env
+   # 必填：管理员账号
+   USERNAME=admin
+   PASSWORD=your_secure_password
+
+   # 必填：存储配置
+   NEXT_PUBLIC_STORAGE_TYPE=kvrocks
+   KVROCKS_URL=redis://apachekvrocks:6666
+
+   # 可选：站点配置
+   SITE_BASE=https://your-domain.zeabur.app
+   NEXT_PUBLIC_SITE_NAME=LunaTV Enhanced
+   ANNOUNCEMENT=欢迎使用 LunaTV Enhanced Edition
+
+   # 可选：豆瓣代理配置（推荐）
+   NEXT_PUBLIC_DOUBAN_PROXY_TYPE=cmliussss-cdn-tencent
+   NEXT_PUBLIC_DOUBAN_IMAGE_PROXY_TYPE=cmliussss-cdn-tencent
+   ```
+
+   **注意**：
+   - 使用服务名称作为主机名：`redis://apachekvrocks:6666`
+   - 如果服务名称不同，请替换为实际名称
+   - 两个服务必须在同一个 Project 中
+
+4. **部署完成**
+   - Zeabur 会自动拉取镜像并启动服务
+   - 等待服务就绪后即可访问
+
+5. **绑定自定义域名（可选）**
+   - 在服务设置中点击 "Domains"
+   - 添加你的自定义域名
+   - 配置 DNS CNAME 记录指向 Zeabur 提供的域名
+
+#### 🔄 更新 Docker 镜像
+
+当 Docker 镜像有新版本发布时，Zeabur 不会自动更新。需要手动触发更新。
+
+**更新步骤：**
+
+1. **进入服务页面**
+   - 点击需要更新的服务（LunaTV 或 KVRocks）
+
+2. **重启服务**
+   - 点击右上角的 **"Restart"** 按钮
+   - Zeabur 会自动拉取最新的 `latest` 镜像并重新部署
+
+> 💡 **提示**：
+> - 使用 `latest` 标签时，Restart 会自动拉取最新镜像
+> - 生产环境推荐使用固定版本标签（如 `v5.5.5`）避免意外更新
+
+#### ✨ Zeabur 部署优势
+
+- ✅ **自动 HTTPS**：免费 SSL 证书自动配置
+- ✅ **全球 CDN**：自带全球加速
+- ✅ **零配置部署**：自动检测 Dockerfile
+- ✅ **服务发现**：容器间通过服务名称自动互联
+- ✅ **持久化存储**：支持数据卷挂载
+- ✅ **CI/CD 集成**：Git 推送自动部署
+- ✅ **实时日志**：Web 界面查看运行日志
+
+#### ⚠️ Zeabur 注意事项
+
+- **计费模式**：按实际使用的资源计费，免费额度足够小型项目使用
+- **区域选择**：建议选择离用户最近的区域部署
+- **服务网络**：同一 Project 中的服务通过服务名称互相访问（如 `apachekvrocks:6666`）
+- **持久化存储**：KVRocks 必须配置持久化卷到 `/data` 目录，否则重启后数据丢失
 
 ---
 

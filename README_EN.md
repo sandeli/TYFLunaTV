@@ -87,7 +87,10 @@ This project is a deeply customized version based on **MoonTV**, continuously de
 ### 📦 Project Status
 
 - **Notice**: After deployment, this is an **empty shell project** with **no built-in video sources or live streaming sources**. You need to collect and configure them yourself.
-- **Demo Site**: [https://lunatv.smone.us](https://lunatv.smone.us) for short-term testing. Database is cleaned regularly.
+- **Demo Sites**:
+  - Zeabur Deployment: [https://smonetv.zeabur.app](https://smonetv.zeabur.app)
+  - Vercel Deployment: [https://lunatv.smone.us](https://lunatv.smone.us)
+  - For short-term testing. Database is cleaned regularly.
 
 ### 🚫 Distribution Restrictions
 
@@ -173,6 +176,7 @@ This project is licensed under **CC BY-NC-SA 4.0**, with the following terms:
 - [Tech Stack](#-tech-stack)
 - [Deployment](#-deployment)
   - [Docker Deployment (Recommended)](#-recommended-kvrocks-storage)
+  - [Zeabur Deployment (Recommended)](#️-zeabur-deployment-recommended)
   - [Vercel Deployment (Serverless)](#-vercel-deployment-serverless)
 - [Configuration File](#️-configuration-file)
 - [Environment Variables](#-environment-variables)
@@ -310,6 +314,102 @@ services:
       - UPSTASH_URL=https://your-instance.upstash.io
       - UPSTASH_TOKEN=your_upstash_token
 ```
+
+### ☁️ Zeabur Deployment (Recommended)
+
+Zeabur is a one-stop cloud deployment platform. Using pre-built Docker images allows for quick deployment without waiting for builds.
+
+**Deployment Steps:**
+
+1. **Add KVRocks Service** (Add database first)
+   - Click "Add Service" > "Docker Images"
+   - Enter image name: `apache/kvrocks`
+   - Configure port: `6666` (TCP)
+   - **Remember the service name** (usually `apachekvrocks`)
+   - **Configure Persistent Volume (Important)**:
+     * Find "Volumes" section in service settings
+     * Click "Add Volume" to add new volume
+     * Volume ID: `kvrocks-data` (customizable, only letters, numbers, and hyphens)
+     * Path: `/var/lib/kvrocks/db`
+     * Save configuration
+
+   > 💡 **Important**: Persistent volume path must be set to `/var/lib/kvrocks/db` (KVRocks data directory). This keeps config files in the container while persisting database files, preventing data loss on restart!
+
+2. **Add LunaTV Service**
+   - Click "Add Service" > "Docker Images"
+   - Enter image name: `ghcr.io/szemeng76/lunatv:latest`
+   - Configure port: `3000` (HTTP)
+
+3. **Configure Environment Variables**
+
+   Add the following environment variables to your LunaTV service:
+
+   ```env
+   # Required: Admin Account
+   USERNAME=admin
+   PASSWORD=your_secure_password
+
+   # Required: Storage Configuration
+   NEXT_PUBLIC_STORAGE_TYPE=kvrocks
+   KVROCKS_URL=redis://apachekvrocks:6666
+
+   # Optional: Site Configuration
+   SITE_BASE=https://your-domain.zeabur.app
+   NEXT_PUBLIC_SITE_NAME=LunaTV Enhanced
+   ANNOUNCEMENT=Welcome to LunaTV Enhanced Edition
+
+   # Optional: Douban Proxy (Recommended)
+   NEXT_PUBLIC_DOUBAN_PROXY_TYPE=cmliussss-cdn-tencent
+   NEXT_PUBLIC_DOUBAN_IMAGE_PROXY_TYPE=cmliussss-cdn-tencent
+   ```
+
+   **Note**:
+   - Use service name as hostname: `redis://apachekvrocks:6666`
+   - Replace with actual service name if different
+   - Both services must be in the same Project
+
+4. **Deployment Complete**
+   - Zeabur will automatically pull images and start services
+   - Access the service once it's ready
+
+5. **Bind Custom Domain (Optional)**
+   - Click "Domains" in service settings
+   - Add your custom domain
+   - Configure DNS CNAME record to point to the Zeabur-provided domain
+
+#### 🔄 Updating Docker Images
+
+When a new Docker image version is released, Zeabur won't automatically update. Manual trigger is required.
+
+**Update Steps:**
+
+1. **Enter Service Page**
+   - Click on the service you want to update (LunaTV or KVRocks)
+
+2. **Restart Service**
+   - Click the **"Restart"** button in the top right corner
+   - Zeabur will automatically pull the latest `latest` image and redeploy
+
+> 💡 **Tips**:
+> - When using `latest` tag, Restart will automatically pull the latest image
+> - For production environments, it's recommended to use fixed version tags (e.g., `v5.5.5`) to avoid unexpected updates
+
+#### ✨ Zeabur Deployment Advantages
+
+- ✅ **Automatic HTTPS**: Free SSL certificate auto-configured
+- ✅ **Global CDN**: Built-in worldwide acceleration
+- ✅ **Zero-Config Deployment**: Automatic Dockerfile detection
+- ✅ **Service Discovery**: Containers communicate via service names automatically
+- ✅ **Persistent Storage**: Volume mounting support
+- ✅ **CI/CD Integration**: Auto-deployment on Git push
+- ✅ **Real-time Logs**: Web interface for runtime logs
+
+#### ⚠️ Zeabur Considerations
+
+- **Pricing Model**: Pay-as-you-go based on actual resource usage, free tier sufficient for small projects
+- **Region Selection**: Recommend choosing the region closest to your users
+- **Service Networking**: Services in the same Project communicate via service names (e.g., `apachekvrocks:6666`)
+- **Persistent Storage**: KVRocks must configure persistent volume to `/data` directory, otherwise data will be lost on restart
 
 ---
 
