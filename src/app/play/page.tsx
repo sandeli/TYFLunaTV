@@ -11,6 +11,7 @@ import { useDownload } from '@/contexts/DownloadContext';
 import DownloadEpisodeSelector from '@/components/download/DownloadEpisodeSelector';
 import EpisodeSelector from '@/components/EpisodeSelector';
 import NetDiskSearchResults from '@/components/NetDiskSearchResults';
+import AcgSearch from '@/components/AcgSearch';
 import PageLayout from '@/components/PageLayout';
 import SkipController, { SkipSettingsButton } from '@/components/SkipController';
 import VideoCard from '@/components/VideoCard';
@@ -95,6 +96,10 @@ function PlayPageClient() {
   const [netdiskError, setNetdiskError] = useState<string | null>(null);
   const [netdiskTotal, setNetdiskTotal] = useState(0);
   const [showNetdiskModal, setShowNetdiskModal] = useState(false);
+  const [netdiskResourceType, setNetdiskResourceType] = useState<'netdisk' | 'acg'>('netdisk'); // 资源类型
+
+  // ACG 动漫磁力搜索状态
+  const [acgTriggerSearch, setAcgTriggerSearch] = useState<boolean>();
 
   // 演员作品状态
   const [selectedCelebrityName, setSelectedCelebrityName] = useState<string | null>(null);
@@ -744,7 +749,13 @@ function PlayPageClient() {
       }
     });
 
-    // 3. 移除数字变体处理（优化性能，依赖downstream相关性评分处理数字差异）
+    // 3. 添加数字变体处理（处理"第X季" <-> "X" 的转换）
+    const numberVariants = generateNumberVariants(trimmed);
+    numberVariants.forEach(variant => {
+      if (!variants.includes(variant)) {
+        variants.push(variant);
+      }
+    });
 
     // 如果包含空格，生成额外变体
     if (trimmed.includes(' ')) {
@@ -799,6 +810,56 @@ function PlayPageClient() {
 
     // 去重并返回
     return Array.from(new Set(variants));
+  };
+
+  /**
+   * 生成数字变体的搜索变体（处理"第X季" <-> "X"的转换）
+   * 优化：只生成最有可能匹配的前2-3个变体
+   * @param query 原始查询
+   * @returns 数字变体数组（按优先级排序）
+   */
+  const generateNumberVariants = (query: string): string[] => {
+    const variants: string[] = [];
+
+    // 中文数字到阿拉伯数字的映射
+    const chineseNumbers: { [key: string]: string } = {
+      '一': '1', '二': '2', '三': '3', '四': '4', '五': '5',
+      '六': '6', '七': '7', '八': '8', '九': '9', '十': '10',
+    };
+
+    // 1. 处理"第X季/部/集"格式（最常见的情况）
+    const seasonPattern = /第([一二三四五六七八九十\d]+)(季|部|集|期)/;
+    const match = seasonPattern.exec(query);
+
+    if (match) {
+      const fullMatch = match[0];
+      const number = match[1];
+      const suffix = match[2];
+      const arabicNumber = chineseNumbers[number] || number;
+      const base = query.replace(fullMatch, '').trim();
+
+      if (base) {
+        // 只生成最常见的格式：无空格，如"一拳超人3"
+        // 不生成"一拳超人 3"和"一拳超人S3"等变体，避免匹配太多不相关结果
+        variants.push(`${base}${arabicNumber}`);
+      }
+    }
+
+    // 2. 处理末尾纯数字（如"牧神记3"）
+    const endNumberMatch = query.match(/^(.+?)\s*(\d+)$/);
+    if (endNumberMatch) {
+      const base = endNumberMatch[1].trim();
+      const number = endNumberMatch[2];
+      const chineseNum = ['', '一', '二', '三', '四', '五', '六', '七', '八', '九', '十'][parseInt(number)];
+
+      if (chineseNum && parseInt(number) <= 10) {
+        // 只生成无空格带"第X季"的变体，如"牧神记第三季"
+        variants.push(`${base}第${chineseNum}季`);
+      }
+    }
+
+    // 限制返回前1个最有可能的变体
+    return variants.slice(0, 1);
   };
 
   // 移除数字变体生成函数（优化性能，依赖相关性评分处理）
@@ -2389,11 +2450,12 @@ function PlayPageClient() {
 
           console.log(`匹配结果: ${relevantMatches.length}/${allCandidates.length}`);
 
-          const maxResults = isEnglishQuery ? 5 : 20; // 英文更严格控制结果数
-          if (relevantMatches.length > 0 && relevantMatches.length <= maxResults) {
+          // 如果有匹配结果，直接返回（去重）
+          if (relevantMatches.length > 0) {
             finalResults = Array.from(
               new Map(relevantMatches.map(item => [`${item.source}-${item.id}`, item])).values()
             ) as SearchResult[];
+            console.log(`找到 ${finalResults.length} 个唯一匹配结果`);
           } else {
             console.log('没有找到合理的匹配，返回空结果');
             finalResults = [];
@@ -6169,73 +6231,139 @@ function PlayPageClient() {
             onClick={(e) => e.stopPropagation()}
           >
             {/* 头部 - Fixed */}
-            <div className='shrink-0 flex items-center justify-between border-b border-gray-200 dark:border-gray-700 p-4 sm:p-6'>
-              <div className='flex items-center gap-2 sm:gap-3'>
-                <div className='text-2xl sm:text-3xl'>📁</div>
-                <div>
-                  <h3 className='text-lg sm:text-xl font-semibold text-gray-800 dark:text-gray-200'>
-                    网盘资源
-                  </h3>
-                  {videoTitle && (
-                    <p className='text-xs sm:text-sm text-gray-500 dark:text-gray-400 mt-0.5'>
-                      搜索关键词：{videoTitle}
-                    </p>
+            <div className='shrink-0 border-b border-gray-200 dark:border-gray-700 p-4 sm:p-6'>
+              <div className='flex items-center justify-between mb-3'>
+                <div className='flex items-center gap-2 sm:gap-3'>
+                  <div className='text-2xl sm:text-3xl'>📁</div>
+                  <div>
+                    <h3 className='text-lg sm:text-xl font-semibold text-gray-800 dark:text-gray-200'>
+                      资源搜索
+                    </h3>
+                    {videoTitle && (
+                      <p className='text-xs sm:text-sm text-gray-500 dark:text-gray-400 mt-0.5'>
+                        搜索关键词：{videoTitle}
+                      </p>
+                    )}
+                  </div>
+                  {netdiskLoading && netdiskResourceType === 'netdisk' && (
+                    <span className='inline-block ml-2'>
+                      <span className='inline-block h-4 w-4 sm:h-5 sm:w-5 border-2 border-gray-300 border-t-blue-500 rounded-full animate-spin'></span>
+                    </span>
+                  )}
+                  {netdiskTotal > 0 && netdiskResourceType === 'netdisk' && (
+                    <span className='inline-flex items-center px-2 sm:px-2.5 py-0.5 sm:py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300 ml-2'>
+                      {netdiskTotal} 个资源
+                    </span>
                   )}
                 </div>
-                {netdiskLoading && (
-                  <span className='inline-block ml-2'>
-                    <span className='inline-block h-4 w-4 sm:h-5 sm:w-5 border-2 border-gray-300 border-t-blue-500 rounded-full animate-spin'></span>
-                  </span>
-                )}
-                {netdiskTotal > 0 && (
-                  <span className='inline-flex items-center px-2 sm:px-2.5 py-0.5 sm:py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300 ml-2'>
-                    {netdiskTotal} 个资源
-                  </span>
-                )}
+                <button
+                  onClick={() => setShowNetdiskModal(false)}
+                  className='rounded-lg p-1.5 sm:p-2 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors active:scale-95'
+                  aria-label='关闭'
+                >
+                  <X className='h-5 w-5 sm:h-6 sm:w-6 text-gray-500' />
+                </button>
               </div>
-              <button
-                onClick={() => setShowNetdiskModal(false)}
-                className='rounded-lg p-1.5 sm:p-2 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors active:scale-95'
-                aria-label='关闭'
-              >
-                <X className='h-5 w-5 sm:h-6 sm:w-6 text-gray-500' />
-              </button>
+
+              {/* 资源类型切换器 - 仅当是动漫时显示 */}
+              {(() => {
+                const isAnime = detail?.type_name?.toLowerCase().includes('动漫') ||
+                               detail?.type_name?.toLowerCase().includes('动画') ||
+                               detail?.type_name?.toLowerCase().includes('anime');
+
+                return isAnime && (
+                  <div className='flex items-center gap-2'>
+                    <span className='text-xs sm:text-sm text-gray-600 dark:text-gray-400'>资源类型：</span>
+                    <div className='flex gap-2'>
+                      <button
+                        onClick={() => {
+                          setNetdiskResourceType('netdisk');
+                          setNetdiskResults(null);
+                          setNetdiskError(null);
+                        }}
+                        className={`px-2.5 sm:px-3 py-1 sm:py-1.5 text-xs sm:text-sm font-medium rounded-lg border transition-all ${
+                          netdiskResourceType === 'netdisk'
+                            ? 'bg-blue-500 text-white border-blue-500 shadow-md'
+                            : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50 dark:bg-gray-700 dark:text-gray-300 dark:border-gray-600 dark:hover:bg-gray-600'
+                        }`}
+                      >
+                        💾 网盘资源
+                      </button>
+                      <button
+                        onClick={() => {
+                          setNetdiskResourceType('acg');
+                          setNetdiskResults(null);
+                          setNetdiskError(null);
+                          if (videoTitle) {
+                            setAcgTriggerSearch(prev => !prev);
+                          }
+                        }}
+                        className={`px-2.5 sm:px-3 py-1 sm:py-1.5 text-xs sm:text-sm font-medium rounded-lg border transition-all ${
+                          netdiskResourceType === 'acg'
+                            ? 'bg-purple-500 text-white border-purple-500 shadow-md'
+                            : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50 dark:bg-gray-700 dark:text-gray-300 dark:border-gray-600 dark:hover:bg-gray-600'
+                        }`}
+                      >
+                        🎌 动漫磁力
+                      </button>
+                    </div>
+                  </div>
+                );
+              })()}
             </div>
 
             {/* 内容区 - Scrollable */}
             <div ref={netdiskModalContentRef} className='flex-1 overflow-y-auto p-4 sm:p-6 relative'>
-              {videoTitle && !netdiskLoading && !netdiskResults && !netdiskError && (
-                <div className='flex flex-col items-center justify-center py-12 sm:py-16 text-center'>
-                  <div className='text-5xl sm:text-6xl mb-4'>📁</div>
-                  <p className='text-sm sm:text-base text-gray-600 dark:text-gray-400'>
-                    点击搜索按钮开始查找网盘资源
-                  </p>
-                  <button
-                    onClick={() => handleNetDiskSearch(videoTitle)}
-                    disabled={netdiskLoading}
-                    className='mt-4 px-4 sm:px-6 py-2 sm:py-2.5 bg-blue-500 hover:bg-blue-600 text-white rounded-lg transition-colors disabled:opacity-50 text-sm sm:text-base font-medium'
-                  >
-                    开始搜索
-                  </button>
-                </div>
+              {/* 根据资源类型显示不同的内容 */}
+              {netdiskResourceType === 'netdisk' ? (
+                <>
+                  {videoTitle && !netdiskLoading && !netdiskResults && !netdiskError && (
+                    <div className='flex flex-col items-center justify-center py-12 sm:py-16 text-center'>
+                      <div className='text-5xl sm:text-6xl mb-4'>📁</div>
+                      <p className='text-sm sm:text-base text-gray-600 dark:text-gray-400'>
+                        点击搜索按钮开始查找网盘资源
+                      </p>
+                      <button
+                        onClick={() => handleNetDiskSearch(videoTitle)}
+                        disabled={netdiskLoading}
+                        className='mt-4 px-4 sm:px-6 py-2 sm:py-2.5 bg-blue-500 hover:bg-blue-600 text-white rounded-lg transition-colors disabled:opacity-50 text-sm sm:text-base font-medium'
+                      >
+                        开始搜索
+                      </button>
+                    </div>
+                  )}
+
+                  <NetDiskSearchResults
+                    results={netdiskResults}
+                    loading={netdiskLoading}
+                    error={netdiskError}
+                    total={netdiskTotal}
+                  />
+
+                </>
+              ) : (
+                /* ACG 动漫磁力搜索 */
+                <AcgSearch
+                  keyword={videoTitle || ''}
+                  triggerSearch={acgTriggerSearch}
+                  onError={(error) => console.error('ACG搜索失败:', error)}
+                />
               )}
 
-              <NetDiskSearchResults
-                results={netdiskResults}
-                loading={netdiskLoading}
-                error={netdiskError}
-                total={netdiskTotal}
-              />
-
-              {/* 返回顶部按钮 - 使用 sticky 定位 */}
-              {netdiskTotal > 10 && (
+              {/* 返回顶部按钮 - 统一放在外层，适用于所有资源类型 */}
+              {((netdiskResourceType === 'netdisk' && netdiskTotal > 10) ||
+                (netdiskResourceType === 'acg')) && (
                 <button
                   onClick={() => {
                     if (netdiskModalContentRef.current) {
                       netdiskModalContentRef.current.scrollTo({ top: 0, behavior: 'smooth' });
                     }
                   }}
-                  className='sticky bottom-6 left-full -ml-14 sm:bottom-8 sm:-ml-16 w-11 h-11 sm:w-12 sm:h-12 bg-blue-500 hover:bg-blue-600 text-white rounded-full shadow-lg hover:shadow-xl transition-all duration-200 flex items-center justify-center active:scale-95 z-50 group'
+                  className={`sticky bottom-6 left-full -ml-14 sm:bottom-8 sm:-ml-16 w-11 h-11 sm:w-12 sm:h-12 ${
+                    netdiskResourceType === 'acg'
+                      ? 'bg-purple-500 hover:bg-purple-600'
+                      : 'bg-blue-500 hover:bg-blue-600'
+                  } text-white rounded-full shadow-lg hover:shadow-xl transition-all duration-200 flex items-center justify-center active:scale-95 z-50 group`}
                   aria-label='返回顶部'
                 >
                   <svg className='w-5 h-5 sm:w-6 sm:h-6 group-hover:translate-y-[-2px] transition-transform' fill='none' stroke='currentColor' viewBox='0 0 24 24'>

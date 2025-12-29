@@ -1013,7 +1013,7 @@ const UserConfig = ({ config, role, refreshConfig }: UserConfigProps) => {
                   className='w-20 px-3 py-1 text-sm border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-blue-500 focus:border-blue-500'
                 />
                 <span className='text-sm text-gray-600 dark:text-gray-400'>
-                  天（注册后超过此天数且从未登入的用户将被自动删除）
+                  天（最后登入超过此天数的用户将被自动删除）
                 </span>
               </div>
             </div>
@@ -4432,8 +4432,17 @@ const SiteConfigComponent = ({ config, refreshConfig }: { config: AdminConfig | 
           throw new Error(data.error || `保存失败: ${resp.status}`);
         }
 
-        showSuccess('保存成功, 请刷新页面', showAlert);
+        const data = await resp.json();
+
+        showSuccess('保存成功', showAlert);
         await refreshConfig();
+
+        // 🔥 如果API返回shouldReload标志，自动刷新页面使配置立即生效（解决Docker缓存问题）
+        if (data.shouldReload) {
+          setTimeout(() => {
+            window.location.reload();
+          }, 1000); // 1秒后刷新，让用户看到成功提示
+        }
       } catch (err) {
         showError(err instanceof Error ? err.message : '保存失败', showAlert);
         throw err;

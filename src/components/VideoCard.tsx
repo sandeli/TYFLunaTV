@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any,react-hooks/exhaustive-deps,@typescript-eslint/no-empty-function */
 
-import { ExternalLink, Heart, Link, PlayCircleIcon, Radio, Star, Trash2 } from 'lucide-react';
+import { ExternalLink, Heart, Link, PlayCircleIcon, Radio, Star, Trash2, Sparkles } from 'lucide-react';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import React, {
@@ -27,6 +27,7 @@ import { useLongPress } from '@/hooks/useLongPress';
 
 import { ImagePlaceholder } from '@/components/ImagePlaceholder';
 import MobileActionSheet from '@/components/MobileActionSheet';
+import AIRecommendModal from '@/components/AIRecommendModal';
 
 export interface VideoCardProps {
   id?: string;
@@ -92,6 +93,8 @@ const VideoCard = forwardRef<VideoCardHandle, VideoCardProps>(function VideoCard
   const [imageLoaded, setImageLoaded] = useState(false); // 图片加载状态
   const [showMobileActions, setShowMobileActions] = useState(false);
   const [searchFavorited, setSearchFavorited] = useState<boolean | null>(null); // 搜索结果的收藏状态
+  const [showAIChat, setShowAIChat] = useState(false); // AI问片弹窗
+  const [aiEnabled, setAiEnabled] = useState(false); // AI功能是否启用
 
   // 🚀 React 19 useOptimistic - 乐观更新收藏状态，提供即时UI反馈
   const [optimisticFavorited, setOptimisticFavorited] = useOptimistic(
@@ -157,6 +160,12 @@ const VideoCard = forwardRef<VideoCardHandle, VideoCardProps>(function VideoCard
     [remarks]
   );
 
+  // 🎯 智能判断是否有底部标签（用于AI按钮位置调整）
+  const hasBottomTags = useMemo(() => {
+    return (remarks && (isSeriesCompleted(remarks) || hasReleaseTag)) ||
+           (isAggregate && dynamicSourceNames && dynamicSourceNames.length > 0);
+  }, [remarks, hasReleaseTag, isAggregate, dynamicSourceNames]);
+
   // 获取收藏状态（搜索结果页面不检查）
   useEffect(() => {
     // 豆瓣内容和非搜索页面需要检查收藏状态
@@ -188,6 +197,34 @@ const VideoCard = forwardRef<VideoCardHandle, VideoCardProps>(function VideoCard
 
     return unsubscribe;
   }, [from, actualSource, actualId, isUpcoming]);
+
+  // 检查AI功能是否启用
+  useEffect(() => {
+    let cancelled = false;
+
+    (async () => {
+      try {
+        const response = await fetch('/api/ai-recommend', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            messages: [{ role: 'user', content: 'ping' }],
+          }),
+        });
+        if (!cancelled) {
+          setAiEnabled(response.status !== 403);
+        }
+      } catch (error) {
+        if (!cancelled) {
+          setAiEnabled(false);
+        }
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   // 🚀 使用 useOptimistic 优化收藏功能 - React 19 新特性
   const handleToggleFavorite = useCallback(
@@ -486,6 +523,11 @@ const VideoCard = forwardRef<VideoCardHandle, VideoCardProps>(function VideoCard
     return configs[from] || configs.search;
   }, [from, isAggregate, douban_id, rate, isUpcoming]);
 
+  // 🎯 智能判断是否有右下角按钮（垃圾桶/收藏，用于AI按钮水平位置调整）
+  const hasRightBottomButtons = useMemo(() => {
+    return (config.showHeart || config.showCheckCircle) && from !== 'favorite';
+  }, [config.showHeart, config.showCheckCircle, from]);
+
   // 移动端操作菜单配置
   const mobileActions = useMemo(() => {
     const actions = [];
@@ -615,6 +657,20 @@ const VideoCard = forwardRef<VideoCardHandle, VideoCardProps>(function VideoCard
       });
     }
 
+    // AI问片功能
+    if (aiEnabled && actualTitle) {
+      actions.push({
+        id: 'ai-chat',
+        label: 'AI问片',
+        icon: <Sparkles size={20} />,
+        onClick: () => {
+          setShowMobileActions(false); // 关闭菜单
+          setShowAIChat(true);
+        },
+        color: 'default' as const,
+      });
+    }
+
     return actions;
   }, [
     config,
@@ -633,6 +689,8 @@ const VideoCard = forwardRef<VideoCardHandle, VideoCardProps>(function VideoCard
     handlePlayInNewTab,
     handleToggleFavorite,
     handleDeleteRecord,
+    aiEnabled,
+    actualTitle,
   ]);
 
   return (
@@ -882,39 +940,12 @@ const VideoCard = forwardRef<VideoCardHandle, VideoCardProps>(function VideoCard
             </div>
           )}
 
-          {/* 类型徽章 - 左上角第一位（电影/电视剧）*/}
-          {hasReleaseTag && type && (
-            <div
-              className={`absolute top-2 left-2 backdrop-blur-md text-white text-xs font-bold px-3 py-1.5 rounded-full shadow-lg ring-2 ring-white/30 transition-all duration-300 ease-out group-hover:scale-105 z-30 ${
-                type === 'movie'
-                  ? 'bg-linear-to-br from-red-500/95 via-rose-500/95 to-pink-600/95 group-hover:shadow-red-500/60 group-hover:ring-red-300/50'
-                  : 'bg-linear-to-br from-blue-500/95 via-indigo-500/95 to-purple-600/95 group-hover:shadow-blue-500/60 group-hover:ring-blue-300/50'
-              }`}
-              style={{
-                WebkitUserSelect: 'none',
-                userSelect: 'none',
-                WebkitTouchCallout: 'none',
-              } as React.CSSProperties}
-              onContextMenu={(e) => {
-                e.preventDefault();
-                return false;
-              }}
-            >
-              <span className="flex items-center gap-1">
-                <span className="text-[10px]">{type === 'movie' ? '🎬' : '📺'}</span>
-                {type === 'movie' ? '电影' : '电视剧'}
-              </span>
-            </div>
-          )}
-
-          {/* 集数徽章 - 左上角第二位（如果有类型徽章，则向下偏移）*/}
+          {/* 集数角标 - Netflix/DecoTV 风格 - 左上角 */}
           {/* 即将上映的内容不显示集数徽章（因为是占位符数据）*/}
           {/* 收藏页面：过滤掉99集的占位符显示，只显示真实集数 */}
           {actualEpisodes && actualEpisodes > 1 && !isUpcoming && !(from === 'favorite' && actualEpisodes === 99) && (
             <div
-              className={`absolute left-2 bg-linear-to-br from-emerald-500/95 via-teal-500/95 to-cyan-600/95 backdrop-blur-md text-white text-xs font-bold px-3 py-1.5 rounded-full shadow-lg ring-2 ring-white/30 transition-all duration-300 ease-out group-hover:scale-105 group-hover:shadow-emerald-500/60 group-hover:ring-emerald-300/50 z-30 ${
-                hasReleaseTag && type ? 'top-[48px]' : 'top-2'
-              }`}
+              className='absolute top-2 left-2 flex items-stretch overflow-hidden rounded-md shadow-lg transition-all duration-300 ease-out group-hover:scale-105 z-30'
               style={{
                 WebkitUserSelect: 'none',
                 userSelect: 'none',
@@ -925,31 +956,33 @@ const VideoCard = forwardRef<VideoCardHandle, VideoCardProps>(function VideoCard
                 return false;
               }}
             >
-              <span className="flex items-center gap-1">
-                <span className="text-[10px]">🎬</span>
-                {currentEpisode
-                  ? `${currentEpisode}/${actualEpisodes}`
-                  : `${actualEpisodes}集`}
-              </span>
+              {currentEpisode ? (
+                <>
+                  {/* 左侧：当前集 - 品牌色背景（红色） */}
+                  <span className='flex items-center bg-red-600 px-1.5 py-0.5 text-[10px] font-bold text-white'>
+                    EP {String(currentEpisode).padStart(2, '0')}
+                  </span>
+                  {/* 右侧：总集数 - 半透明黑背景 */}
+                  <span className='flex items-center bg-black/70 backdrop-blur-sm px-1.5 py-0.5 text-[10px] font-medium text-white/60'>
+                    / {actualEpisodes}
+                  </span>
+                </>
+              ) : (
+                /* 仅显示总集数 */
+                <span className='flex items-center bg-black/70 backdrop-blur-sm px-2 py-0.5 text-[10px] font-medium text-white/80'>
+                  {actualEpisodes} 集
+                </span>
+              )}
             </div>
           )}
 
-          {/* 年份徽章 - 左上角（根据前面的徽章数量动态调整位置）*/}
+          {/* 年份徽章 - Netflix 风格 - 左上角第二位 */}
           {config.showYear && actualYear && actualYear !== 'unknown' && actualYear.trim() !== '' && (
             <div
-              className={`absolute left-2 bg-linear-to-br from-indigo-500/90 via-purple-500/90 to-pink-500/90 backdrop-blur-md text-white text-xs font-bold px-3 py-1.5 rounded-full shadow-lg ring-2 ring-white/30 transition-all duration-300 ease-out group-hover:scale-105 group-hover:shadow-purple-500/50 group-hover:ring-purple-300/50 ${
-                (() => {
-                  let offset = 2; // 默认 top-2
-                  // 如果有上映相关的类型徽章
-                  if (hasReleaseTag && type) {
-                    offset += 46; // top-[48px]
-                  }
-                  // 如果有集数徽章
-                  if (actualEpisodes && actualEpisodes > 1) {
-                    offset += 46; // 再加 46px
-                  }
-                  return `top-[${offset}px]`;
-                })()
+              className={`absolute left-2 flex items-center bg-black/70 backdrop-blur-sm px-2 py-0.5 rounded-md shadow-lg text-white/80 text-[10px] font-medium transition-all duration-300 ease-out group-hover:scale-105 z-30 ${
+                actualEpisodes && actualEpisodes > 1 && !isUpcoming && !(from === 'favorite' && actualEpisodes === 99)
+                  ? 'top-[38px]'  // 有集数徽章时向下偏移
+                  : 'top-2'
               }`}
               style={{
                 WebkitUserSelect: 'none',
@@ -961,17 +994,14 @@ const VideoCard = forwardRef<VideoCardHandle, VideoCardProps>(function VideoCard
                 return false;
               }}
             >
-              <span className="flex items-center gap-1">
-                <span className="text-[10px]">📅</span>
-                {actualYear}
-              </span>
+              {actualYear}
             </div>
           )}
 
-          {/* 已完结徽章 - 美化版，放在底部左侧 */}
+          {/* 已完结徽章 - Netflix 风格 - 底部左侧 */}
           {remarks && isSeriesCompleted(remarks) && (
             <div
-              className="absolute bottom-2 left-2 bg-linear-to-br from-blue-500/95 via-indigo-500/95 to-purple-600/95 backdrop-blur-md text-white text-xs font-bold px-3 py-1.5 rounded-full shadow-lg ring-2 ring-white/30 transition-all duration-300 ease-out group-hover:scale-105 group-hover:shadow-blue-500/60 group-hover:ring-blue-300/50"
+              className="absolute bottom-2 left-2 flex items-center gap-1 bg-black/70 backdrop-blur-sm px-2 py-0.5 rounded-md shadow-lg text-white/80 text-[10px] font-medium transition-all duration-300 ease-out group-hover:scale-105 z-30"
               style={{
                 WebkitUserSelect: 'none',
                 userSelect: 'none',
@@ -982,36 +1012,26 @@ const VideoCard = forwardRef<VideoCardHandle, VideoCardProps>(function VideoCard
                 return false;
               }}
             >
-              <span className="flex items-center gap-1">
-                <span className="text-[10px]">✓</span>
-                已完结
-              </span>
+              <span className="text-green-400">✓</span>
+              <span>已完结</span>
             </div>
           )}
 
-          {/* 上映状态徽章 - 美化版，放在底部左侧 */}
+          {/* 上映状态徽章 - Netflix 风格 - 底部左侧 */}
           {hasReleaseTag && (() => {
-            // 根据状态选择emoji和颜色
-            let emoji = '🔜';
-            let bgColors = 'from-orange-500/95 via-red-500/95 to-pink-600/95';
-            let shadowColor = 'group-hover:shadow-orange-500/60';
-            let ringColor = 'group-hover:ring-orange-300/50';
+            // 根据状态选择颜色和文本
+            let statusColor = 'text-orange-400';
+            let statusText = remarks || '';
 
             if (remarks?.includes('已上映')) {
-              emoji = '🎬';
-              bgColors = 'from-green-500/95 via-emerald-500/95 to-teal-600/95';
-              shadowColor = 'group-hover:shadow-green-500/60';
-              ringColor = 'group-hover:ring-green-300/50';
+              statusColor = 'text-green-400';
             } else if (remarks?.includes('今日上映')) {
-              emoji = '🎉';
-              bgColors = 'from-yellow-500/95 via-orange-500/95 to-red-600/95';
-              shadowColor = 'group-hover:shadow-yellow-500/60';
-              ringColor = 'group-hover:ring-yellow-300/50';
+              statusColor = 'text-yellow-400';
             }
 
             return (
               <div
-                className={`absolute bottom-2 left-2 bg-linear-to-br ${bgColors} backdrop-blur-md text-white text-xs font-bold px-3 py-1.5 rounded-full shadow-lg ring-2 ring-white/30 transition-all duration-300 ease-out group-hover:scale-105 ${shadowColor} ${ringColor} animate-pulse`}
+                className="absolute bottom-2 left-2 flex items-center gap-1 bg-black/70 backdrop-blur-sm px-2 py-0.5 rounded-md shadow-lg text-[10px] font-medium transition-all duration-300 ease-out group-hover:scale-105 z-30"
                 style={{
                   WebkitUserSelect: 'none',
                   userSelect: 'none',
@@ -1022,10 +1042,8 @@ const VideoCard = forwardRef<VideoCardHandle, VideoCardProps>(function VideoCard
                   return false;
                 }}
               >
-                <span className="flex items-center gap-1">
-                  <span className="text-[10px]">{emoji}</span>
-                  {remarks}
-                </span>
+                <span className={statusColor}>●</span>
+                <span className="text-white/80">{statusText}</span>
               </div>
             );
           })()}
@@ -1096,7 +1114,7 @@ const VideoCard = forwardRef<VideoCardHandle, VideoCardProps>(function VideoCard
             </a>
           )}
 
-          {/* 聚合播放源指示器 */}
+          {/* 聚合播放源指示器 - Netflix 统一风格 */}
           {isAggregate && dynamicSourceNames && dynamicSourceNames.length > 0 && (() => {
             const uniqueSources = Array.from(new Set(dynamicSourceNames));
             const sourceCount = uniqueSources.length;
@@ -1122,8 +1140,9 @@ const VideoCard = forwardRef<VideoCardHandle, VideoCardProps>(function VideoCard
                     WebkitTouchCallout: 'none',
                   } as React.CSSProperties}
                 >
+                  {/* 源数量徽章 */}
                   <div
-                    className='bg-linear-to-br from-orange-500/95 via-amber-500/95 to-yellow-500/95 backdrop-blur-md text-white text-xs font-bold w-8 h-8 sm:w-9 sm:h-9 rounded-full flex items-center justify-center shadow-lg ring-2 ring-white/30 hover:scale-[1.15] transition-all duration-300 ease-out cursor-pointer hover:shadow-orange-500/50'
+                    className='bg-black/70 backdrop-blur-sm text-white text-[10px] font-bold px-2 py-0.5 rounded-md shadow-lg flex items-center gap-1 hover:scale-105 transition-all duration-300 cursor-pointer'
                     style={{
                       WebkitUserSelect: 'none',
                       userSelect: 'none',
@@ -1134,10 +1153,8 @@ const VideoCard = forwardRef<VideoCardHandle, VideoCardProps>(function VideoCard
                       return false;
                     }}
                   >
-                    <span className="flex flex-col items-center justify-center leading-none">
-                      <span className="text-[9px] @[180px]:text-[10px] font-normal">源</span>
-                      <span className="text-xs @[180px]:text-sm font-extrabold">{sourceCount}</span>
-                    </span>
+                    <span>{sourceCount}</span>
+                    <span className='text-white/60'>源</span>
                   </div>
 
                   {/* 播放源详情悬浮框 */}
@@ -1216,6 +1233,56 @@ const VideoCard = forwardRef<VideoCardHandle, VideoCardProps>(function VideoCard
               </div>
             );
           })()}
+
+          {/* 🎯 AI问片按钮 - 桌面端hover显示，智能位置（避开底部标签和右下角按钮） */}
+          {aiEnabled && actualTitle && (
+            <div
+              className={`
+                hidden md:block absolute
+                ${hasRightBottomButtons ? 'left-1/3 -translate-x-1/2' : 'left-1/2 -translate-x-1/2'}
+                ${hasBottomTags ? 'bottom-14' : 'bottom-4'}
+                opacity-0 translate-y-2
+                group-hover:opacity-100 group-hover:translate-y-0
+                transition-all duration-300 ease-out z-20
+              `}
+              onClick={(e) => {
+                e.stopPropagation();
+                e.preventDefault();
+              }}
+              style={{
+                WebkitUserSelect: 'none',
+                userSelect: 'none',
+                WebkitTouchCallout: 'none',
+              } as React.CSSProperties}
+              onContextMenu={(e) => {
+                e.preventDefault();
+                return false;
+              }}
+            >
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  e.preventDefault();
+                  setShowAIChat(true);
+                }}
+                className='flex items-center gap-1.5 px-3 py-1.5 rounded-md
+                  bg-black/70 backdrop-blur-sm
+                  shadow-lg text-white/90
+                  hover:bg-black/80 hover:scale-105 hover:shadow-[0_0_12px_rgba(168,85,247,0.4)]
+                  transition-all duration-300 ease-out
+                  border border-white/10'
+                aria-label='AI问片'
+                style={{
+                  WebkitUserSelect: 'none',
+                  userSelect: 'none',
+                  WebkitTouchCallout: 'none',
+                } as React.CSSProperties}
+              >
+                <Sparkles size={14} className='text-purple-400' />
+                <span className='text-xs font-medium whitespace-nowrap'>AI问片</span>
+              </button>
+            </div>
+          )}
         </div>
 
         {/* 进度条 */}
@@ -1426,6 +1493,22 @@ const VideoCard = forwardRef<VideoCardHandle, VideoCardProps>(function VideoCard
         totalEpisodes={actualEpisodes}
         origin={origin}
       />
+
+      {/* AI问片弹窗 */}
+      {aiEnabled && showAIChat && (
+        <AIRecommendModal
+          isOpen={showAIChat}
+          onClose={() => setShowAIChat(false)}
+          context={{
+            title: actualTitle,
+            year: actualYear,
+            douban_id: actualDoubanId,
+            type: actualSearchType as 'movie' | 'tv',
+            currentEpisode,
+          }}
+          welcomeMessage={`想了解《${actualTitle}》的更多信息吗？我可以帮你查询剧情、演员、评价等。`}
+        />
+      )}
     </>
   );
 }
