@@ -427,12 +427,24 @@ const PlayStatsPage: React.FC = () => {
       checkUpdates();
 
       // 监听播放记录更新事件（修复删除记录后页面不立即更新的问题）
+      let updateTimeout: NodeJS.Timeout | null = null;
       const handlePlayRecordsUpdate = () => {
         console.log('播放记录更新，重新检查 watchingUpdates');
+
+        // 🔧 防抖：避免无限循环，1秒内只执行一次
+        if (updateTimeout) {
+          console.log('⏸️ 防抖：跳过本次更新请求');
+          return;
+        }
+
+        updateTimeout = setTimeout(() => {
+          updateTimeout = null;
+        }, 1000);
+
         // 🔧 优化：使用新的强制清除缓存函数
         forceClearWatchingUpdatesCache();
-        // 🔧 优化：强制刷新追番更新状态，跳过缓存时间检查
-        checkWatchingUpdates(true).then(() => {
+        // 🔧 不使用强制刷新，让缓存机制生效，避免无限循环
+        checkWatchingUpdates().then(() => {
           const details = getDetailedWatchingUpdates();
           setWatchingUpdates(details);
           console.log('watchingUpdates 已更新:', details);
@@ -444,6 +456,9 @@ const PlayStatsPage: React.FC = () => {
 
       return () => {
         window.removeEventListener('playRecordsUpdated', handlePlayRecordsUpdate);
+        if (updateTimeout) {
+          clearTimeout(updateTimeout);
+        }
       };
     }
   }, [authInfo]);
@@ -1428,7 +1443,7 @@ const PlayStatsPage: React.FC = () => {
                                 remarks={series.remarks}
                               />
                               {/* 新集数提示光环效果 */}
-                              <div className="absolute inset-0 rounded-lg ring-2 ring-red-400 ring-opacity-50 animate-pulse pointer-events-none z-9 transition-transform duration-300 ease-in-out group-hover/card:scale-[1.05]"></div>
+                              <div className="absolute inset-0 rounded-lg ring-2 ring-red-400/50 animate-pulse pointer-events-none z-9 transition-transform duration-300 ease-in-out group-hover/card:scale-[1.05]"></div>
                             </div>
                             {/* 新集数徽章 - Netflix 统一风格 */}
                             <div className="absolute -top-2 -right-2 bg-red-600 text-white text-xs px-2 py-0.5 rounded-md shadow-lg animate-pulse z-10 font-bold">
@@ -1461,7 +1476,7 @@ const PlayStatsPage: React.FC = () => {
                                 remarks={series.remarks}
                               />
                               {/* 新集数提示光环效果 */}
-                              <div className="absolute inset-0 rounded-lg ring-2 ring-red-400 ring-opacity-50 animate-pulse pointer-events-none z-9 transition-transform duration-300 ease-in-out group-hover/card:scale-[1.05]"></div>
+                              <div className="absolute inset-0 rounded-lg ring-2 ring-red-400/50 animate-pulse pointer-events-none z-9 transition-transform duration-300 ease-in-out group-hover/card:scale-[1.05]"></div>
                             </div>
                             {/* 新集数徽章 - Netflix 统一风格 */}
                             <div className="absolute -top-2 -right-2 bg-red-600 text-white text-xs px-2 py-0.5 rounded-md shadow-lg animate-pulse z-10 font-bold">
@@ -1511,7 +1526,7 @@ const PlayStatsPage: React.FC = () => {
                                 remarks={series.remarks}
                               />
                               {/* 继续观看提示光环效果 */}
-                              <div className="absolute inset-0 rounded-lg ring-2 ring-blue-400 ring-opacity-50 animate-pulse pointer-events-none z-9 transition-transform duration-300 ease-in-out group-hover/card:scale-[1.05]"></div>
+                              <div className="absolute inset-0 rounded-lg ring-2 ring-blue-400/50 animate-pulse pointer-events-none z-9 transition-transform duration-300 ease-in-out group-hover/card:scale-[1.05]"></div>
                             </div>
                             {/* 继续观看徽章 - Netflix 统一风格 */}
                             <div className="absolute -top-2 -right-2 bg-blue-600 text-white text-xs px-2 py-0.5 rounded-md shadow-lg animate-pulse z-10 font-bold">
@@ -1544,7 +1559,7 @@ const PlayStatsPage: React.FC = () => {
                                 remarks={series.remarks}
                               />
                               {/* 继续观看提示光环效果 */}
-                              <div className="absolute inset-0 rounded-lg ring-2 ring-blue-400 ring-opacity-50 animate-pulse pointer-events-none z-9 transition-transform duration-300 ease-in-out group-hover/card:scale-[1.05]"></div>
+                              <div className="absolute inset-0 rounded-lg ring-2 ring-blue-400/50 animate-pulse pointer-events-none z-9 transition-transform duration-300 ease-in-out group-hover/card:scale-[1.05]"></div>
                             </div>
                             {/* 继续观看徽章 - Netflix 统一风格 */}
                             <div className="absolute -top-2 -right-2 bg-blue-600 text-white text-xs px-2 py-0.5 rounded-md shadow-lg animate-pulse z-10 font-bold">
@@ -2027,7 +2042,7 @@ const PlayStatsPage: React.FC = () => {
                             remarks={series.remarks}
                           />
                           {/* 新集数提示光环效果 */}
-                          <div className="absolute inset-0 rounded-lg ring-2 ring-red-400 ring-opacity-50 animate-pulse pointer-events-none z-9 transition-transform duration-300 ease-in-out group-hover/card:scale-[1.05]"></div>
+                          <div className="absolute inset-0 rounded-lg ring-2 ring-red-400/50 animate-pulse pointer-events-none z-9 transition-transform duration-300 ease-in-out group-hover/card:scale-[1.05]"></div>
                         </div>
                         {/* 新集数徽章 - Netflix 统一风格 */}
                         <div className="absolute -top-2 -right-2 bg-red-600 text-white text-xs px-2 py-0.5 rounded-md shadow-lg animate-pulse z-10 font-bold">
@@ -2060,7 +2075,7 @@ const PlayStatsPage: React.FC = () => {
                             remarks={series.remarks}
                           />
                           {/* 新集数提示光环效果 */}
-                          <div className="absolute inset-0 rounded-lg ring-2 ring-red-400 ring-opacity-50 animate-pulse pointer-events-none z-9 transition-transform duration-300 ease-in-out group-hover/card:scale-[1.05]"></div>
+                          <div className="absolute inset-0 rounded-lg ring-2 ring-red-400/50 animate-pulse pointer-events-none z-9 transition-transform duration-300 ease-in-out group-hover/card:scale-[1.05]"></div>
                         </div>
                         {/* 新集数徽章 - Netflix 统一风格 */}
                         <div className="absolute -top-2 -right-2 bg-red-600 text-white text-xs px-2 py-0.5 rounded-md shadow-lg animate-pulse z-10 font-bold">
@@ -2110,7 +2125,7 @@ const PlayStatsPage: React.FC = () => {
                             remarks={series.remarks}
                           />
                           {/* 继续观看提示光环效果 */}
-                          <div className="absolute inset-0 rounded-lg ring-2 ring-blue-400 ring-opacity-50 animate-pulse pointer-events-none z-9 transition-transform duration-300 ease-in-out group-hover/card:scale-[1.05]"></div>
+                          <div className="absolute inset-0 rounded-lg ring-2 ring-blue-400/50 animate-pulse pointer-events-none z-9 transition-transform duration-300 ease-in-out group-hover/card:scale-[1.05]"></div>
                         </div>
                         {/* 继续观看徽章 - Netflix 统一风格 */}
                         <div className="absolute -top-2 -right-2 bg-blue-600 text-white text-xs px-2 py-0.5 rounded-md shadow-lg animate-pulse z-10 font-bold">
@@ -2143,7 +2158,7 @@ const PlayStatsPage: React.FC = () => {
                             remarks={series.remarks}
                           />
                           {/* 继续观看提示光环效果 */}
-                          <div className="absolute inset-0 rounded-lg ring-2 ring-blue-400 ring-opacity-50 animate-pulse pointer-events-none z-9 transition-transform duration-300 ease-in-out group-hover/card:scale-[1.05]"></div>
+                          <div className="absolute inset-0 rounded-lg ring-2 ring-blue-400/50 animate-pulse pointer-events-none z-9 transition-transform duration-300 ease-in-out group-hover/card:scale-[1.05]"></div>
                         </div>
                         {/* 继续观看徽章 - Netflix 统一风格 */}
                         <div className="absolute -top-2 -right-2 bg-blue-600 text-white text-xs px-2 py-0.5 rounded-md shadow-lg animate-pulse z-10 font-bold">
