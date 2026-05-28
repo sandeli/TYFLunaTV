@@ -41,6 +41,7 @@ import DanmuSettingsPanel from '@/components/play/DanmuSettingsPanel';
 import WebSRSettingsPanel from '@/components/play/WebSRSettingsPanel';
 import { SeekButtonsSettingsPanel } from '@/components/play/SeekButtonsSettingsPanel';
 import artplayerPluginChromecast from '@/lib/artplayer-plugin-chromecast';
+import artplayerPluginAutoThumbnail from '@/lib/artplayer-plugin-auto-thumbnail';
 import artplayerPluginLiquidGlass from '@/lib/artplayer-plugin-liquid-glass';
 import artplayerPluginSeekButtons from '@/lib/artplayer-plugin-seek-buttons';
 import { ClientCache } from '@/lib/client-cache';
@@ -4961,6 +4962,11 @@ function PlayPageClient() {
           // 毛玻璃效果控制栏插件 - 现代化悬浮设计
           // CSS已优化：桌面98%宽度，移动端100%，按钮可自动缩小适应
           artplayerPluginLiquidGlass(),
+          artplayerPluginAutoThumbnail({
+            width: 160,
+            number: 100,
+            scale: 1,
+          }),
           // 快进/快退按钮插件 - 在控制栏添加 ±10秒 按钮
           artplayerPluginSeekButtons({
             seekTime: parseInt(localStorage.getItem('seek_time') || '10', 10),
