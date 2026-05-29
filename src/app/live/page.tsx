@@ -96,7 +96,6 @@ interface GroupSummary {
 // 常量定义
 const RECENT_GROUPS_STORAGE_KEY = 'liveRecentGroups';
 const PINNED_GROUPS_STORAGE_KEY = 'livePinnedGroups';
-const LIVE_DIRECT_CONNECT_STORAGE_KEY = 'live-direct-playback-enabled';
 const MAX_RECENT_GROUPS = 8;
 const HEALTH_CHECK_CACHE_MS = 3 * 60 * 1000; // 3分钟缓存
 const HEALTH_CHECK_BATCH_SIZE = 12; // 每次检测12个频道
@@ -232,7 +231,7 @@ function LivePageClient() {
   // 🚀 直连模式相关状态
   const [directPlaybackEnabled, setDirectPlaybackEnabled] = useState(() => {
     if (typeof window !== 'undefined') {
-      const saved = localStorage.getItem(LIVE_DIRECT_CONNECT_STORAGE_KEY);
+      const saved = localStorage.getItem('live-direct-playback-enabled');
       return saved ? JSON.parse(saved) : false; // 默认关闭，使用代理
     }
     return false;
@@ -1271,12 +1270,6 @@ function LivePageClient() {
     }
 
     const cacheKey = `${sourceKey}:${channel.url}`;
-    if (directPlaybackEnabled) {
-      healthByUrlCacheRef.current[cacheKey] = fallbackInfo;
-      setChannelHealth(channel.id, fallbackInfo);
-      return fallbackInfo;
-    }
-
     const cachedInfo = healthByUrlCacheRef.current[cacheKey];
     if (
       !options?.force &&
@@ -1362,7 +1355,7 @@ function LivePageClient() {
     } finally {
       healthCheckingRef.current.delete(cacheKey);
     }
-  }, [currentSource, directPlaybackEnabled]);
+  }, [currentSource]);
 
   // 新增：持久化最近访问分组
   const persistRecentGroups = (nextGroups: string[]) => {
@@ -1647,34 +1640,18 @@ function LivePageClient() {
     }
   }, [selectedGroup, groupedChannels]);
 
-  function isLunaProxyUrl(rawUrl: string) {
-    try {
-      const base = typeof window !== 'undefined' ? window.location.href : 'http://local';
-      const parsed = new URL(rawUrl, base);
-      return (
-        typeof window !== 'undefined' &&
-        parsed.origin === window.location.origin &&
-        parsed.pathname.startsWith('/api/proxy/')
-      );
-    } catch {
-      return false;
-    }
-  }
-
   class CustomHlsJsLoader extends Hls.DefaultConfig.loader {
     constructor(config: any) {
       super(config);
       const load = this.load.bind(this);
       this.load = function (context: any, config: any, callbacks: any) {
-        // 只给自己的代理请求加 source 参数，避免污染外部 CDN URL
-        if (isLunaProxyUrl(context.url)) {
-          try {
-            const url = new URL(context.url, window.location.href);
-            url.searchParams.set('moontv-source', currentSourceRef.current?.key || '');
-            context.url = url.toString();
-          } catch {
-            // ignore
-          }
+        // 所有的请求都带一个 source 参数
+        try {
+          const url = new URL(context.url);
+          url.searchParams.set('moontv-source', currentSourceRef.current?.key || '');
+          context.url = url.toString();
+        } catch (error) {
+          // ignore
         }
         // 拦截manifest和level请求
         if (
@@ -1682,7 +1659,7 @@ function LivePageClient() {
           (context as any).type === 'level'
         ) {
           // 判断是否浏览器直连
-          const isLiveDirectConnectStr = localStorage.getItem(LIVE_DIRECT_CONNECT_STORAGE_KEY);
+          const isLiveDirectConnectStr = localStorage.getItem('liveDirectConnect');
           const isLiveDirectConnect = isLiveDirectConnectStr === 'true';
           if (isLiveDirectConnect) {
             // 浏览器直连，使用 URL 对象处理参数
@@ -1690,7 +1667,8 @@ function LivePageClient() {
               const url = new URL(context.url);
               url.searchParams.set('allowCORS', 'true');
               context.url = url.toString();
-            } catch {
+            } catch (error) {
+              // 如果 URL 解析失败，回退到字符串拼接
               context.url = context.url + '&allowCORS=true';
             }
           }
@@ -2541,7 +2519,7 @@ function LivePageClient() {
                     setDirectPlaybackEnabled(newValue);
                     // 保存到 localStorage
                     if (typeof window !== 'undefined') {
-                      localStorage.setItem(LIVE_DIRECT_CONNECT_STORAGE_KEY, JSON.stringify(newValue));
+                      localStorage.setItem('live-direct-playback-enabled', JSON.stringify(newValue));
                     }
                     // useEffect 会自动检测 directPlaybackEnabled 的变化并重新加载播放器
                   }}
@@ -3153,7 +3131,7 @@ function LivePageClient() {
                               const enabled = e.target.checked;
                               setDirectPlaybackEnabled(enabled);
                               if (typeof window !== 'undefined') {
-                                localStorage.setItem(LIVE_DIRECT_CONNECT_STORAGE_KEY, JSON.stringify(enabled));
+                                localStorage.setItem('live-direct-playback-enabled', JSON.stringify(enabled));
                               }
                             }}
                             className='rounded text-green-500 focus:ring-green-500'
