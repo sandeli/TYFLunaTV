@@ -36,7 +36,7 @@ export const changelog: ChangelogEntry[] = [
     "⚡ 播放速率修复：修复切换视频源或剧集时播放速率被重置的问题",
     "🎬 播放器锁定模式修复：移除锁定模式下的背景渐变，修复浮动快进按钮在锁定时仍显示的问题",
     "🔄 source-browser URL 状态修复：修复 URL 参数与状态的同步循环，正确从 URL 恢复来源和分类，修复分类高亮类型比较和加载时分类参数丢失问题",
-    "🛡️ 浏览器翻译插件崩溃防护加固：在所有页面根容器加 translate="no"，防止 Safari/Chrome 翻译插件修改 DOM 导致 React removeChild 崩溃（补充 layout.tsx 的 html 级防护）",
+    "🛡️ 浏览器翻译插件崩溃防护加固：在所有页面根容器加 translate='no'，防止 Safari/Chrome 翻译插件修改 DOM 导致 React removeChild 崩溃（补充 layout.tsx 的 html 级防护）",
     "🔧 DOM 节点守卫：修复 undefined 列表和过期 DOM 节点引用导致的崩溃"
     ]
   },
