@@ -142,7 +142,12 @@ export class SqliteStorage implements IStorage {
         login_count INTEGER NOT NULL DEFAULT 0,
         first_login_time INTEGER,
         last_login_time INTEGER,
-        last_login_date INTEGER
+        last_login_date INTEGER,
+        last_login_ip TEXT,
+        last_login_location TEXT,
+        last_login_device TEXT,
+        last_login_browser TEXT,
+        last_login_os TEXT
       );
 
       CREATE TABLE IF NOT EXISTS emby_configs (
@@ -993,6 +998,11 @@ export class SqliteStorage implements IStorage {
           firstLoginTime: loginStats.firstLoginTime,
           lastLoginTime: loginStats.lastLoginTime,
           lastLoginDate: loginStats.lastLoginDate,
+          lastLoginIp: loginRow?.last_login_ip ?? undefined,
+          lastLoginLocation: loginRow?.last_login_location ?? undefined,
+          lastLoginDevice: loginRow?.last_login_device ?? undefined,
+          lastLoginBrowser: loginRow?.last_login_browser ?? undefined,
+          lastLoginOs: loginRow?.last_login_os ?? undefined,
         };
       }
 
@@ -1058,6 +1068,11 @@ export class SqliteStorage implements IStorage {
         firstLoginTime: loginStats.firstLoginTime,
         lastLoginTime: loginStats.lastLoginTime,
         lastLoginDate: loginStats.lastLoginDate,
+        lastLoginIp: loginRow?.last_login_ip ?? undefined,
+        lastLoginLocation: loginRow?.last_login_location ?? undefined,
+        lastLoginDevice: loginRow?.last_login_device ?? undefined,
+        lastLoginBrowser: loginRow?.last_login_browser ?? undefined,
+        lastLoginOs: loginRow?.last_login_os ?? undefined,
       };
     } catch (error) {
       console.error(`[SQLite] getUserPlayStat 错误 (${userName}):`, error);
@@ -1170,6 +1185,7 @@ export class SqliteStorage implements IStorage {
     userName: string,
     loginTime: number,
     isFirstLogin?: boolean,
+    loginMeta?: { ip?: string; location?: string; device?: string; browser?: string; os?: string }
   ): Promise<void> {
     const row = this.db
       .prepare('SELECT * FROM login_stats WHERE username = ?')
@@ -1190,10 +1206,18 @@ export class SqliteStorage implements IStorage {
     this.db
       .prepare(
         `INSERT OR REPLACE INTO login_stats
-         (username, login_count, first_login_time, last_login_time, last_login_date)
-         VALUES (?, ?, ?, ?, ?)`,
+         (username, login_count, first_login_time, last_login_time, last_login_date,
+          last_login_ip, last_login_location, last_login_device, last_login_browser, last_login_os)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       )
-      .run(userName, loginCount, firstLoginTime, loginTime, loginTime);
+      .run(
+        userName, loginCount, firstLoginTime, loginTime, loginTime,
+        loginMeta?.ip ?? (row?.last_login_ip ?? null),
+        loginMeta?.location ?? (row?.last_login_location ?? null),
+        loginMeta?.device ?? (row?.last_login_device ?? null),
+        loginMeta?.browser ?? (row?.last_login_browser ?? null),
+        loginMeta?.os ?? (row?.last_login_os ?? null),
+      );
   }
 
   // ==================== Emby 配置 ====================

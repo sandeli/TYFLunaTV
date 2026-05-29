@@ -61,6 +61,11 @@ export async function GET(request: NextRequest) {
       lastLoginTime: number;
       loginCount: number;
       createdAt: number;
+      lastLoginIp?: string;
+      lastLoginLocation?: string;
+      lastLoginDevice?: string;
+      lastLoginBrowser?: string;
+      lastLoginOs?: string;
     }> = [];
     let totalWatchTime = 0;
     let totalPlays = 0;
@@ -107,13 +112,21 @@ export async function GET(request: NextRequest) {
         // 获取用户最后登录时间和登入次数（从用户统计中获取真实登入时间）
         let lastLoginTime = 0;
         let loginCount = 0;
+        let lastLoginIp: string | undefined;
+        let lastLoginLocation: string | undefined;
+        let lastLoginDevice: string | undefined;
+        let lastLoginBrowser: string | undefined;
+        let lastLoginOs: string | undefined;
         try {
           const userPlayStat = await storage.getUserPlayStat(user.username);
-          // 优先使用用户统计中的登入时间，这是真实的登录时间
           lastLoginTime = userPlayStat.lastLoginTime || userPlayStat.lastLoginDate || userPlayStat.firstLoginTime || 0;
           loginCount = userPlayStat.loginCount || 0;
+          lastLoginIp = userPlayStat.lastLoginIp;
+          lastLoginLocation = userPlayStat.lastLoginLocation;
+          lastLoginDevice = userPlayStat.lastLoginDevice;
+          lastLoginBrowser = userPlayStat.lastLoginBrowser;
+          lastLoginOs = userPlayStat.lastLoginOs;
         } catch (err) {
-          // 获取失败时默认为0
           lastLoginTime = 0;
           loginCount = 0;
         }
@@ -136,6 +149,11 @@ export async function GET(request: NextRequest) {
             lastLoginTime,
             loginCount,
             createdAt: userCreatedAt,
+            lastLoginIp,
+            lastLoginLocation,
+            lastLoginDevice,
+            lastLoginBrowser,
+            lastLoginOs,
           });
           continue;
         }
@@ -198,9 +216,14 @@ export async function GET(request: NextRequest) {
           avgWatchTime: records.length > 0 ? userWatchTime / records.length : 0,
           mostWatchedSource,
           registrationDays,
-          lastLoginTime: lastLoginTime || userCreatedAt, // 如果没有登入记录，使用注册时间
+          lastLoginTime: lastLoginTime || userCreatedAt,
           loginCount,
           createdAt: userCreatedAt,
+          lastLoginIp,
+          lastLoginLocation,
+          lastLoginDevice,
+          lastLoginBrowser,
+          lastLoginOs,
         };
 
         userStats.push(userStat);

@@ -816,6 +816,30 @@ const PlayStatsPage: React.FC = () => {
                                   ? formatDateTime(userStat.lastLoginTime)
                                   : '注册时'}
                               </p>
+                              {(userStat as any).lastLoginIp && (
+                                <p className='text-xs text-gray-500 dark:text-gray-400 flex items-center gap-1'>
+                                  <span>🌐</span>
+                                  <span>{(userStat as any).lastLoginIp}</span>
+                                  {(userStat as any).lastLoginLocation && (
+                                    <span className='text-blue-500 dark:text-blue-400'>
+                                      ({(userStat as any).lastLoginLocation})
+                                    </span>
+                                  )}
+                                </p>
+                              )}
+                              {(userStat as any).lastLoginDevice && (
+                                <p className='text-xs text-gray-500 dark:text-gray-400 flex items-center gap-1'>
+                                  <span>
+                                    {(userStat as any).lastLoginDevice === 'mobile' ? '📱'
+                                      : (userStat as any).lastLoginDevice === 'tablet' ? '📟'
+                                      : '💻'}
+                                  </span>
+                                  <span>
+                                    {(userStat as any).lastLoginOs || ''}
+                                    {(userStat as any).lastLoginBrowser ? ` · ${(userStat as any).lastLoginBrowser}` : ''}
+                                  </span>
+                                </p>
+                              )}
                               <div className='text-xs text-gray-500 dark:text-gray-400'>
                                 {(() => {
                                   const loginCount = userStat.loginCount || 0;
@@ -894,6 +918,37 @@ const PlayStatsPage: React.FC = () => {
                       {/* 展开的播放记录详情 */}
                       {expandedUsers.has(userStat.username) && (
                         <div className='p-4 bg-gray-50 dark:bg-gray-900 border-t border-gray-200 dark:border-gray-700'>
+                          {/* 登入信息卡片 */}
+                          {((userStat as any).lastLoginIp || (userStat as any).lastLoginDevice) && (
+                            <div className='mb-4 p-3 bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700'>
+                              <h6 className='text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-2'>最近登入信息</h6>
+                              <div className='flex flex-wrap gap-3'>
+                                {(userStat as any).lastLoginIp && (
+                                  <div className='flex items-center gap-1.5 text-xs text-gray-700 dark:text-gray-300'>
+                                    <span>🌐</span>
+                                    <span className='font-mono'>{(userStat as any).lastLoginIp}</span>
+                                    {(userStat as any).lastLoginLocation && (
+                                      <span className='px-1.5 py-0.5 bg-blue-100 dark:bg-blue-900/40 text-blue-700 dark:text-blue-300 rounded text-xs'>
+                                        {(userStat as any).lastLoginLocation}
+                                      </span>
+                                    )}
+                                  </div>
+                                )}
+                                {(userStat as any).lastLoginDevice && (
+                                  <div className='flex items-center gap-1.5 text-xs text-gray-700 dark:text-gray-300'>
+                                    <span>
+                                      {(userStat as any).lastLoginDevice === 'mobile' ? '📱'
+                                        : (userStat as any).lastLoginDevice === 'tablet' ? '📟'
+                                        : '💻'}
+                                    </span>
+                                    <span>
+                                      {[(userStat as any).lastLoginOs, (userStat as any).lastLoginBrowser].filter(Boolean).join(' · ')}
+                                    </span>
+                                  </div>
+                                )}
+                              </div>
+                            </div>
+                          )}
                           {userStat.recentRecords.length > 0 ? (
                             <>
                               <h6 className='text-sm font-medium text-gray-700 dark:text-gray-300 mb-4'>
