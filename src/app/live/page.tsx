@@ -1362,7 +1362,7 @@ function LivePageClient() {
     } finally {
       healthCheckingRef.current.delete(cacheKey);
     }
-  }, [currentSource]);
+  }, [currentSource, directPlaybackEnabled]);
 
   // 新增：持久化最近访问分组
   const persistRecentGroups = (nextGroups: string[]) => {
@@ -1684,7 +1684,7 @@ function LivePageClient() {
           // 判断是否浏览器直连
           const isLiveDirectConnectStr = localStorage.getItem(LIVE_DIRECT_CONNECT_STORAGE_KEY);
           const isLiveDirectConnect = isLiveDirectConnectStr === 'true';
-          if (isLiveDirectConnect && isLunaProxyUrl(context.url)) {
+          if (isLiveDirectConnect) {
             // 浏览器直连，使用 URL 对象处理参数
             try {
               const url = new URL(context.url);
