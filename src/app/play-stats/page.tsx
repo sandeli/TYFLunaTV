@@ -928,7 +928,7 @@ const PlayStatsPage: React.FC = () => {
                                 {(userStat as any).lastLoginIp && (
                                   <div className='flex items-start gap-1.5 text-xs text-gray-700 dark:text-gray-300 min-w-0'>
                                     <span className='shrink-0'>🌐</span>
-                                    <span className='font-mono break-words'>{(userStat as any).lastLoginIp}</span>
+                                    <span className='font-mono break-words flex-1 min-w-0'>{(userStat as any).lastLoginIp}</span>
                                     {(userStat as any).lastLoginLocation && (
                                       <span className='shrink-0 px-1.5 py-0.5 bg-blue-100 dark:bg-blue-900/40 text-blue-700 dark:text-blue-300 rounded text-xs'>
                                         {(userStat as any).lastLoginLocation}
