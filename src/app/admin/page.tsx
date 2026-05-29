@@ -5266,6 +5266,7 @@ const SiteConfigComponent = ({ config, refreshConfig }: { config: AdminConfig | 
       label: '豆瓣 CDN By CMLiussss（腾讯云）',
     },
     { value: 'cmliussss-cdn-ali', label: '豆瓣 CDN By CMLiussss（阿里云）' },
+    { value: 'cmliussss-unified', label: '豆瓣 CDN By CMLiussss（统一域名）' },
     { value: 'custom', label: '自定义代理' },
   ];
 
@@ -5300,6 +5301,7 @@ const SiteConfigComponent = ({ config, refreshConfig }: { config: AdminConfig | 
         };
       case 'cmliussss-cdn-tencent':
       case 'cmliussss-cdn-ali':
+      case 'cmliussss-unified':
         return {
           text: 'Thanks to @CMLiussss',
           url: 'https://github.com/cmliu',
