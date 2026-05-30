@@ -22,6 +22,7 @@ interface PlayInfoPanelProps {
   tmdbOverview?: string | null;
   tmdbRating?: number | null;
   tmdbLogo?: string | null;
+  tmdbNumberOfSeasons?: number | null;
   favorited: boolean;
   onToggleFavorite: () => void;
   detail?: any;
@@ -45,7 +46,7 @@ interface PlayInfoPanelProps {
 export default function PlayInfoPanel(props: PlayInfoPanelProps) {
   const {
     title, year, cover, sourceName, totalEpisodes, currentEpisodeIndex,
-    episodeName, backdropUrl, tmdbPoster, tmdbOverview, tmdbRating, tmdbLogo,
+    episodeName, backdropUrl, tmdbPoster, tmdbOverview, tmdbRating, tmdbLogo, tmdbNumberOfSeasons,
     favorited, onToggleFavorite,
     detail, movieDetails, bangumiDetails, shortdramaDetails,
     movieComments, commentsError, loadingMovieDetails, loadingBangumiDetails,
@@ -152,6 +153,11 @@ export default function PlayInfoPanel(props: PlayInfoPanelProps) {
               {episodeText && (
                 <span className="text-[11px] px-2 py-0.5 rounded-full bg-white/15 text-white/90 border border-white/20">
                   {episodeText}
+                </span>
+              )}
+              {tmdbNumberOfSeasons && tmdbNumberOfSeasons > 1 && (
+                <span className="text-[11px] px-2 py-0.5 rounded-full bg-white/15 text-white/90 border border-white/20">
+                  共 {tmdbNumberOfSeasons} 季
                 </span>
               )}
             </div>

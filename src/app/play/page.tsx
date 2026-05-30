@@ -503,6 +503,7 @@ function PlayPageClient() {
     overview: string | null;
     rating: number | null;
     year: string | null;
+    numberOfSeasons: number | null;
   } | null>(null);
   const tmdbFetchedRef = useRef(false);
   useEffect(() => {
@@ -6325,6 +6326,7 @@ function PlayPageClient() {
           tmdbOverview={tmdbData?.overview}
           tmdbRating={tmdbData?.rating}
           tmdbLogo={tmdbData?.logo}
+          tmdbNumberOfSeasons={tmdbData?.numberOfSeasons}
           favorited={favorited}
           onToggleFavorite={handleToggleFavorite}
           detail={detail}

@@ -62,6 +62,21 @@ export async function GET(request: NextRequest) {
       const images = imagesRes.ok ? await imagesRes.json() : null;
       const logoUrl = pickLogo(images?.logos || []);
 
+      // TV 类型额外拿季数
+      let numberOfSeasons: number | null = null;
+      if (type === 'tv') {
+        try {
+          const detailRes = await fetch(
+            `${base}/tv/${hit.id}?api_key=${apiKey}&language=${lang}`,
+            { signal: AbortSignal.timeout(6000) }
+          );
+          if (detailRes.ok) {
+            const detail = await detailRes.json();
+            numberOfSeasons = detail.number_of_seasons || null;
+          }
+        } catch { /* ignore */ }
+      }
+
       return {
         backdrop: hit.backdrop_path ? `https://image.tmdb.org/t/p/w1280${hit.backdrop_path}` : null,
         poster: hit.poster_path ? `https://image.tmdb.org/t/p/w500${hit.poster_path}` : null,
@@ -70,14 +85,23 @@ export async function GET(request: NextRequest) {
         overview: hit.overview || null,
         rating: hit.vote_average ? parseFloat(hit.vote_average.toFixed(1)) : null,
         year: (type === 'movie' ? hit.release_date : hit.first_air_date)?.slice(0, 4) || null,
+        numberOfSeasons: numberOfSeasons,
       };
     } catch {
       return null;
     }
   };
 
-  const searchQuery = originalTitle || title!;
-  const fallbackQuery = originalTitle && title ? title : null;
+  // 清理标题：去掉「第X季」「Season X」「S1」等后缀
+  const cleanTitle = (t: string) => t
+    .replace(/\s*第[一二三四五六七八九十\d]+季.*$/u, '')
+    .replace(/\s*Season\s*\d+.*/i, '')
+    .replace(/\s*S\d{1,2}$/i, '')
+    .replace(/\s*(19|20)\d{2}$/, '')
+    .trim();
+
+  const searchQuery = cleanTitle(originalTitle || title!);
+  const fallbackQuery = originalTitle && title ? cleanTitle(title) : null;
 
   let data = (await trySearch(searchQuery, 'movie')) || (await trySearch(searchQuery, 'tv'));
   if (!data && fallbackQuery) {
