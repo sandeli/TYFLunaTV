@@ -83,16 +83,6 @@ jobs:
         id: lowercase
         run: echo "owner=$(echo '${{ github.repository_owner }}' | tr '[:upper:]' '[:lower:]')" >> "$GITHUB_OUTPUT"
 
-      - name: Extract metadata
-        id: meta
-        uses: docker/metadata-action@v6
-        with:
-          images: ghcr.io/${{ steps.lowercase.outputs.owner }}/lunatv
-          flavor: |
-            latest=false
-          tags: |
-            type=sha
-
       - name: Build and push by digest
         id: build
         uses: docker/build-push-action@v6
@@ -100,7 +90,6 @@ jobs:
           context: .
           file: ./Dockerfile
           platforms: ${{ matrix.platform }}
-          labels: ${{ steps.meta.outputs.labels }}
           outputs: type=image,name=ghcr.io/${{ steps.lowercase.outputs.owner }}/lunatv,name-canonical=true,push=true
           no-cache: true
           pull: true

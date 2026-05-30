@@ -21,6 +21,7 @@ interface PlayInfoPanelProps {
   tmdbPoster?: string | null;
   tmdbOverview?: string | null;
   tmdbRating?: number | null;
+  tmdbLogo?: string | null;
   favorited: boolean;
   onToggleFavorite: () => void;
   detail?: any;
@@ -44,7 +45,7 @@ interface PlayInfoPanelProps {
 export default function PlayInfoPanel(props: PlayInfoPanelProps) {
   const {
     title, year, cover, sourceName, totalEpisodes, currentEpisodeIndex,
-    episodeName, backdropUrl, tmdbPoster, tmdbOverview, tmdbRating,
+    episodeName, backdropUrl, tmdbPoster, tmdbOverview, tmdbRating, tmdbLogo,
     favorited, onToggleFavorite,
     detail, movieDetails, bangumiDetails, shortdramaDetails,
     movieComments, commentsError, loadingMovieDetails, loadingBangumiDetails,
@@ -103,12 +104,12 @@ export default function PlayInfoPanel(props: PlayInfoPanelProps) {
 
       {/* ── Hero 背景图 ── */}
       {bgUrl && (
-        <section className="relative overflow-hidden" style={{ minHeight: 240 }}>
+        <section className="relative overflow-hidden rounded-t-xl" style={{ minHeight: 'clamp(280px, 40vw, 420px)' }}>
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img src={bgUrl} alt={title}
-            className="absolute inset-0 w-full h-full object-cover object-center" />
+            className="absolute inset-0 w-full h-full object-cover object-top" />
           <div className="absolute inset-0 bg-gradient-to-r from-black/92 via-black/70 to-black/30" />
-          <div className="absolute inset-0 bg-gradient-to-t from-black/92 via-black/45 to-transparent" />
+          <div className="absolute inset-0 bg-gradient-to-t from-black/95 via-black/45 to-transparent" />
 
           {/* 右下角竖版海报 */}
           {posterUrl && (

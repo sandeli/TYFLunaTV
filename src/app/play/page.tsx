@@ -494,10 +494,11 @@ function PlayPageClient() {
   const loadingMovieDetails = movieDetailsStatus === 'pending';
   const loadingComments = commentsStatus === 'pending';
 
-  // TMDB 数据（backdrop + poster + title + overview + rating）
+  // TMDB 数据（backdrop + poster + logo + title + overview + rating）
   const [tmdbData, setTmdbData] = useState<{
     backdrop: string | null;
     poster: string | null;
+    logo: string | null;
     title: string | null;
     overview: string | null;
     rating: number | null;
@@ -506,12 +507,15 @@ function PlayPageClient() {
   useEffect(() => {
     if (!videoTitle) return;
     let cancelled = false;
-    fetch(`/api/tmdb/backdrop?title=${encodeURIComponent(videoTitle)}${videoYear ? `&year=${encodeURIComponent(videoYear)}` : ''}`)
+    const params = new URLSearchParams({ title: videoTitle });
+    if (videoYear) params.set('year', videoYear);
+    if (movieDetails?.original_title) params.set('original_title', movieDetails.original_title);
+    fetch(`/api/tmdb/backdrop?${params.toString()}`)
       .then(r => r.ok ? r.json() : null)
       .then(json => { if (!cancelled && json?.data) setTmdbData(json.data); })
       .catch(() => {});
     return () => { cancelled = true; };
-  }, [videoTitle, videoYear]);
+  }, [videoTitle, videoYear, movieDetails?.original_title]);
 
   // 当前源和ID
   const [currentSource, setCurrentSource] = useState(
@@ -6317,6 +6321,7 @@ function PlayPageClient() {
           tmdbPoster={tmdbData?.poster}
           tmdbOverview={tmdbData?.overview}
           tmdbRating={tmdbData?.rating}
+          tmdbLogo={tmdbData?.logo}
           favorited={favorited}
           onToggleFavorite={handleToggleFavorite}
           detail={detail}
