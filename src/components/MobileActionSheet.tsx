@@ -2,6 +2,8 @@ import { ChevronDown, Radio, X } from 'lucide-react';
 import Image from 'next/image';
 import React, { useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
+import { fetchDoubanQuickInfo, fetchDoubanSuggest } from '@/lib/douban.client';
+import { fetchBangumiSubject } from '@/lib/bangumi.client';
 
 interface ActionItem {
   id: string;
@@ -187,24 +189,11 @@ const MobileActionSheet: React.FC<MobileActionSheetProps> = ({
     const load = async () => {
       // bangumi 直接打 bangumi API
       if (isBangumi && doubanId && doubanId > 0) {
-        try {
-          const res = await fetch(`/api/proxy/bangumi?path=v0/subjects/${doubanId}`);
-          if (!res.ok) return;
-          const data = await res.json();
-          if (data?.name) {
-            setDoubanDetails({
-              id: String(doubanId),
-              title: data.name || data.name_cn || '',
-              year: data.date?.slice(0, 4) || '',
-              rate: data.rating?.score ? Number(data.rating.score).toFixed(1) : null,
-              genres: (data.tags || []).slice(0, 5).map((t: any) => t.name).filter(Boolean),
-              directors: [],
-              cast: [],
-              plot_summary: data.summary || '',
-            });
-            setShowScrollHint(true);
-          }
-        } catch {}
+        const result = await fetchBangumiSubject(doubanId);
+        if (result) {
+          setDoubanDetails(result);
+          setShowScrollHint(true);
+        }
         return;
       }
 
@@ -212,20 +201,15 @@ const MobileActionSheet: React.FC<MobileActionSheetProps> = ({
 
       if (!id && videoTitle) {
         try {
-          const res = await fetch(`/api/douban/suggest?q=${encodeURIComponent(videoTitle.trim())}`);
-          if (res.ok) {
-            const data = await res.json();
-            if (data?.[0]?.id) id = data[0].id;
-          }
+          const results = await fetchDoubanSuggest(videoTitle.trim());
+          if (results?.[0]?.id) id = results[0].id;
         } catch {}
       }
 
       if (!id) return;
 
       try {
-        const res = await fetch(`/api/douban/quick-info?id=${id}`);
-        if (!res.ok) return;
-        const data = await res.json();
+        const data = await fetchDoubanQuickInfo(id);
         if (data?.code === 200 && data?.data) {
           setDoubanDetails(data.data);
           setShowScrollHint(true);
