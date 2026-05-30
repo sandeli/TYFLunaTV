@@ -104,7 +104,7 @@ export default function PlayInfoPanel(props: PlayInfoPanelProps) {
 
       {/* ── Hero 背景图 ── */}
       {bgUrl && (
-        <section className="relative overflow-hidden rounded-t-xl" style={{ minHeight: 'clamp(280px, 40vw, 420px)' }}>
+        <section className="relative overflow-hidden rounded-t-xl min-h-[360px] sm:min-h-[420px] md:min-h-[520px] lg:min-h-[620px]">
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img src={bgUrl} alt={title}
             className="absolute inset-0 w-full h-full object-cover object-top" />
@@ -120,8 +120,7 @@ export default function PlayInfoPanel(props: PlayInfoPanelProps) {
           )}
 
           {/* 内容区 — 右边留出海报宽度 */}
-          <div className="relative z-10 flex flex-col justify-end gap-2.5 p-4 sm:p-6 lg:pr-36 xl:pr-40"
-            style={{ minHeight: 240 }}>
+          <div className="relative z-10 flex flex-col justify-end gap-2.5 p-4 sm:p-6 lg:pr-36 xl:pr-40">
 
             {/* 标签行 */}
             <div className="flex flex-wrap items-center gap-1.5">
@@ -158,36 +157,34 @@ export default function PlayInfoPanel(props: PlayInfoPanelProps) {
             </div>
 
             {/* 标题 — 有 TMDB logo 就显示图片，没有就显示文字 */}
-            <div className="flex items-start gap-3">
-              {tmdbLogo ? (
-                <div className="flex-1">
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img src={tmdbLogo} alt={title}
-                    className="max-h-16 sm:max-h-20 md:max-h-24 w-auto max-w-[70%] object-contain drop-shadow-lg" />
-                </div>
-              ) : (
-                <h1 className="flex-1 text-2xl sm:text-3xl md:text-4xl font-bold text-white leading-tight line-clamp-2">
-                  {title}
-                </h1>
-              )}
-              <div className="shrink-0 mt-1">
-                <button
-                  onClick={onToggleFavorite}
-                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white/15 border border-white/20 text-white/90 hover:bg-white/25 transition-colors text-xs font-medium"
-                  aria-label={favorited ? '取消收藏' : '加入收藏'}
-                >
-                  <Heart className={`size-3.5 transition-colors ${favorited ? 'fill-rose-500 text-rose-500' : ''}`} />
-                  <span>{favorited ? '已收藏' : '收藏'}</span>
-                </button>
-              </div>
-            </div>
+            {tmdbLogo ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img src={tmdbLogo} alt={title}
+                className="max-h-16 sm:max-h-20 md:max-h-28 w-auto max-w-[60%] object-contain drop-shadow-lg" />
+            ) : (
+              <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold text-white leading-tight line-clamp-2">
+                {title}
+              </h1>
+            )}
 
             {/* 简介 — TMDB 优先 */}
             {overview && (
-              <p className="text-sm text-white/75 leading-relaxed line-clamp-2 md:line-clamp-3 max-w-2xl">
+              <p className="text-sm text-white/80 leading-relaxed line-clamp-2 md:line-clamp-3 max-w-2xl">
                 {overview}
               </p>
             )}
+
+            {/* 按钮行 — 收藏 */}
+            <div className="flex flex-wrap gap-2.5">
+              <button
+                onClick={onToggleFavorite}
+                className="flex items-center gap-1.5 px-4 py-2 rounded-full border border-white/35 bg-white/12 text-white font-medium text-sm hover:bg-white/20 transition-colors"
+                aria-label={favorited ? '取消收藏' : '加入收藏'}
+              >
+                <Heart className={`size-4 transition-colors ${favorited ? 'fill-rose-500 text-rose-500' : ''}`} />
+                {favorited ? '已加入收藏' : '加入收藏'}
+              </button>
+            </div>
           </div>
         </section>
       )}
@@ -227,7 +224,7 @@ export default function PlayInfoPanel(props: PlayInfoPanelProps) {
             detail={detail} year={year} movieDetails={movieDetails}
             bangumiDetails={bangumiDetails} shortdramaDetails={shortdramaDetails}
             loadingMovieDetails={loadingMovieDetails} loadingBangumiDetails={loadingBangumiDetails}
-            currentSource={currentSource} videoDoubanId={videoDoubanId} hasBg={!!bgUrl}
+            currentSource={currentSource} videoDoubanId={videoDoubanId}
           />
         )}
         {activeTab === 'cast' && (
@@ -277,8 +274,8 @@ function OverviewTab({ detail, year, movieDetails, bangumiDetails, shortdramaDet
         {detail?.type_name && <span className="text-gray-600 dark:text-gray-400">{detail.type_name}</span>}
       </div>
 
-      {/* 简介（没有 hero 背景时才显示） */}
-      {!hasBg && (shortdramaDetails?.desc || bangumiDetails?.summary || movieDetails?.plot_summary || detail?.desc) && (
+      {/* 简介 — 始终用豆瓣数据 */}
+      {(shortdramaDetails?.desc || bangumiDetails?.summary || movieDetails?.plot_summary || detail?.desc) && (
         <p className="text-gray-700 dark:text-gray-300 leading-relaxed">
           {movieDetails?.plot_summary || bangumiDetails?.summary || shortdramaDetails?.desc || detail?.desc}
         </p>

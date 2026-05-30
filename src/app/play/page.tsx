@@ -504,8 +504,12 @@ function PlayPageClient() {
     rating: number | null;
     year: string | null;
   } | null>(null);
+  const tmdbFetchedRef = useRef(false);
   useEffect(() => {
     if (!videoTitle) return;
+    if (loadingMovieDetails) return;
+    if (tmdbFetchedRef.current) return;
+    tmdbFetchedRef.current = true;
     let cancelled = false;
     const params = new URLSearchParams({ title: videoTitle });
     if (videoYear) params.set('year', videoYear);
@@ -515,7 +519,7 @@ function PlayPageClient() {
       .then(json => { if (!cancelled && json?.data) setTmdbData(json.data); })
       .catch(() => {});
     return () => { cancelled = true; };
-  }, [videoTitle, videoYear, movieDetails?.original_title]);
+  }, [videoTitle, videoYear, loadingMovieDetails, movieDetails?.original_title]);
 
   // 当前源和ID
   const [currentSource, setCurrentSource] = useState(
