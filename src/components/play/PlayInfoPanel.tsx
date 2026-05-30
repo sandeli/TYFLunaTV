@@ -120,7 +120,7 @@ export default function PlayInfoPanel(props: PlayInfoPanelProps) {
           )}
 
           {/* 内容区 — 右边留出海报宽度 */}
-          <div className="relative z-10 flex flex-col justify-end gap-2.5 p-4 sm:p-6 lg:pr-36 xl:pr-40">
+          <div className="absolute inset-0 z-10 flex flex-col justify-end gap-2.5 p-4 sm:p-6 lg:pr-36 xl:pr-40">
 
             {/* 标签行 */}
             <div className="flex flex-wrap items-center gap-1.5">
