@@ -1,7 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getConfig } from '@/lib/config';
+import { db } from '@/lib/db';
 
 export const runtime = 'nodejs';
+
+const CACHE_TTL = 86400; // 24小时
 
 export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url);
@@ -14,6 +17,15 @@ export async function GET(request: NextRequest) {
   const config = await getConfig();
   const apiKey = config.SiteConfig?.TMDBApiKey;
   if (!apiKey) return NextResponse.json({ data: null });
+
+  const cacheKey = `tmdb-backdrop-${originalTitle || title}-${year || ''}`;
+
+  // 服务端缓存
+  const cached = await db.getCache(cacheKey);
+  if (cached) {
+    return NextResponse.json({ data: cached },
+      { headers: { 'Cache-Control': 'public, max-age=86400, s-maxage=86400, stale-while-revalidate=604800' } });
+  }
 
   const lang = config.SiteConfig?.TMDBLanguage || 'zh-CN';
   const base = 'https://api.themoviedb.org/3';
@@ -64,7 +76,6 @@ export async function GET(request: NextRequest) {
     }
   };
 
-  // 优先用 original_title（英文）搜，没有才用中文 title
   const searchQuery = originalTitle || title!;
   const fallbackQuery = originalTitle && title ? title : null;
 
@@ -72,6 +83,9 @@ export async function GET(request: NextRequest) {
   if (!data && fallbackQuery) {
     data = (await trySearch(fallbackQuery, 'movie')) || (await trySearch(fallbackQuery, 'tv'));
   }
+
+  // 写入服务端缓存
+  if (data) await db.setCache(cacheKey, data, CACHE_TTL);
 
   return NextResponse.json(
     { data },
