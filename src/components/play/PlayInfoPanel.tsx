@@ -2,7 +2,7 @@
 'use client';
 
 import { useState, useRef, useLayoutEffect, useEffect, useCallback } from 'react';
-import FavoriteButton from '@/components/play/FavoriteButton';
+import { Heart } from 'lucide-react';
 import VideoCard from '@/components/VideoCard';
 import CommentSection from '@/components/play/CommentSection';
 import { processImageUrl } from '@/lib/utils';
@@ -135,12 +135,12 @@ export default function PlayInfoPanel(props: PlayInfoPanelProps) {
                   {detail?.year || year}
                 </span>
               )}
-              {movieDetails?.rate && parseFloat(movieDetails.rate) > 0 && (
+              {displayRating && displayRating > 0 && (
                 <span className="text-[11px] px-2 py-0.5 rounded-full bg-amber-500/80 text-white font-medium">
-                  ★ {parseFloat(movieDetails.rate).toFixed(1)}
+                  ★ {displayRating.toFixed(1)}
                 </span>
               )}
-              {bangumiDetails?.rating?.score && parseFloat(bangumiDetails.rating.score) > 0 && (
+              {bangumiDetails?.rating?.score && !tmdbRating && parseFloat(bangumiDetails.rating.score) > 0 && (
                 <span className="text-[11px] px-2 py-0.5 rounded-full bg-pink-500/80 text-white font-medium">
                   ★ {parseFloat(bangumiDetails.rating.score).toFixed(1)}
                 </span>
@@ -157,20 +157,35 @@ export default function PlayInfoPanel(props: PlayInfoPanelProps) {
               )}
             </div>
 
-            {/* 标题 + 收藏 */}
+            {/* 标题 — 有 TMDB logo 就显示图片，没有就显示文字 */}
             <div className="flex items-start gap-3">
-              <h1 className="flex-1 text-2xl sm:text-3xl md:text-4xl font-bold text-white leading-tight line-clamp-2">
-                {title}
-              </h1>
+              {tmdbLogo ? (
+                <div className="flex-1">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img src={tmdbLogo} alt={title}
+                    className="max-h-16 sm:max-h-20 md:max-h-24 w-auto max-w-[70%] object-contain drop-shadow-lg" />
+                </div>
+              ) : (
+                <h1 className="flex-1 text-2xl sm:text-3xl md:text-4xl font-bold text-white leading-tight line-clamp-2">
+                  {title}
+                </h1>
+              )}
               <div className="shrink-0 mt-1">
-                <FavoriteButton favorited={favorited} onToggle={onToggleFavorite} />
+                <button
+                  onClick={onToggleFavorite}
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white/15 border border-white/20 text-white/90 hover:bg-white/25 transition-colors text-xs font-medium"
+                  aria-label={favorited ? '取消收藏' : '加入收藏'}
+                >
+                  <Heart className={`size-3.5 transition-colors ${favorited ? 'fill-rose-500 text-rose-500' : ''}`} />
+                  <span>{favorited ? '已收藏' : '收藏'}</span>
+                </button>
               </div>
             </div>
 
-            {/* 简介 */}
-            {(movieDetails?.plot_summary || bangumiDetails?.summary || shortdramaDetails?.desc || detail?.desc) && (
+            {/* 简介 — TMDB 优先 */}
+            {overview && (
               <p className="text-sm text-white/75 leading-relaxed line-clamp-2 md:line-clamp-3 max-w-2xl">
-                {movieDetails?.plot_summary || bangumiDetails?.summary || shortdramaDetails?.desc || detail?.desc}
+                {overview}
               </p>
             )}
           </div>
