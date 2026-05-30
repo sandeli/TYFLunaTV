@@ -9,7 +9,7 @@ on:
       tag:
         description: 'Docker 标签'
         required: false
-        default: 'latest'
+        default: ''
         type: string
   push:
     branches: [ main, master, dev ]
@@ -90,10 +90,10 @@ jobs:
         uses: docker/metadata-action@v6
         with:
           images: ghcr.io/${{ steps.lowercase.outputs.owner }}/lunatv
+          flavor: |
+            latest=false
           tags: |
-            type=raw,value=latest,enable={{is_default_branch}}
-            type=raw,value=${{ steps.version_check.outputs.current_version }},enable=${{ steps.version_check.outputs.version_changed == 'true' }}
-            type=raw,value=${{ github.event.inputs.tag }},enable=${{ github.event.inputs.tag != '' }}
+            type=sha
 
       - name: Build and push by digest
         id: build
@@ -103,7 +103,6 @@ jobs:
           file: ./Dockerfile
           platforms: ${{ matrix.platform }}
           labels: ${{ steps.meta.outputs.labels }}
-          tags: ${{ steps.meta.outputs.tags }}
           outputs: type=image,name=ghcr.io/${{ steps.lowercase.outputs.owner }}/lunatv,name-canonical=true,push=true
           no-cache: true
           pull: true
