@@ -42,12 +42,9 @@ export async function GET(request: NextRequest) {
   };
 
   const trySearch = async (query: string, type: 'movie' | 'tv') => {
-    const yearParam = year
-      ? type === 'movie' ? `&year=${year}` : `&first_air_date_year=${year}`
-      : '';
     try {
       const res = await fetch(
-        `${base}/search/${type}?api_key=${apiKey}&language=${lang}&query=${encodeURIComponent(query)}${yearParam}`,
+        `${base}/search/${type}?api_key=${apiKey}&language=${lang}&query=${encodeURIComponent(query)}`,
         { signal: AbortSignal.timeout(6000) }
       );
       if (!res.ok) return null;
