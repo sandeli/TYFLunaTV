@@ -8,11 +8,11 @@ export async function GET(request: NextRequest) {
   const title = searchParams.get('title')?.trim();
   const year = searchParams.get('year')?.trim();
 
-  if (!title) return NextResponse.json({ backdrop: null }, { status: 400 });
+  if (!title) return NextResponse.json({ data: null }, { status: 400 });
 
   const config = await getConfig();
   const apiKey = config.SiteConfig?.TMDBApiKey;
-  if (!apiKey) return NextResponse.json({ backdrop: null });
+  if (!apiKey) return NextResponse.json({ data: null });
 
   const lang = config.SiteConfig?.TMDBLanguage || 'zh-CN';
   const base = 'https://api.themoviedb.org/3';
@@ -29,17 +29,24 @@ export async function GET(request: NextRequest) {
       if (!res.ok) return null;
       const data = await res.json();
       const hit = data.results?.[0];
-      if (!hit?.backdrop_path) return null;
-      return `https://image.tmdb.org/t/p/w1280${hit.backdrop_path}`;
+      if (!hit) return null;
+      return {
+        backdrop: hit.backdrop_path ? `https://image.tmdb.org/t/p/w1280${hit.backdrop_path}` : null,
+        poster: hit.poster_path ? `https://image.tmdb.org/t/p/w500${hit.poster_path}` : null,
+        title: (type === 'movie' ? hit.title : hit.name) || null,
+        overview: hit.overview || null,
+        rating: hit.vote_average ? parseFloat(hit.vote_average.toFixed(1)) : null,
+        year: (type === 'movie' ? hit.release_date : hit.first_air_date)?.slice(0, 4) || null,
+      };
     } catch {
       return null;
     }
   };
 
-  const backdrop = (await trySearch('movie')) || (await trySearch('tv'));
+  const data = (await trySearch('movie')) || (await trySearch('tv'));
 
   return NextResponse.json(
-    { backdrop },
+    { data },
     { headers: { 'Cache-Control': 'public, max-age=86400, s-maxage=86400, stale-while-revalidate=604800' } }
   );
 }
