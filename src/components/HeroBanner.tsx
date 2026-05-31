@@ -13,7 +13,6 @@ import {
   useRefreshTrailerUrlMutation,
   useClearTrailerUrlMutation,
 } from '@/hooks/useHeroBannerQueries';
-import type { TMDBData } from '@/hooks/useTMDBLogo';
 
 interface BannerItem {
   id: string | number;
@@ -27,7 +26,6 @@ interface BannerItem {
   type?: string;
   trailerUrl?: string; // 预告片视频URL（可选）
   tmdbLogo?: string; // TMDB logo URL（可选）
-  tmdbData?: TMDBData | null; // 完整的TMDB数据（可选）
 }
 
 interface HeroBannerProps {
@@ -229,8 +227,7 @@ function HeroBanner({
   }
 
   const currentItem = items[currentIndex];
-  // 优先使用 TMDB backdrop，其次是原始 backdrop 或 poster
-  const backgroundImage = getHDBackdrop(currentItem.tmdbData?.backdrop || currentItem.backdrop) || currentItem.poster;
+  const backgroundImage = getHDBackdrop(currentItem.backdrop) || currentItem.poster;
 
   // 🔍 调试日志
   console.log('[HeroBanner] 当前项目:', {
@@ -474,13 +471,13 @@ function HeroBanner({
       {/* 内容叠加层 - Netflix风格：左下角 */}
       <div className="absolute bottom-0 left-0 right-0 px-4 sm:px-8 md:px-12 lg:px-16 xl:px-20 pb-12 sm:pb-16 md:pb-20 lg:pb-24">
         <div className="space-y-3 sm:space-y-4 md:space-y-5 lg:space-y-6">
-          {/* 标题 - Netflix风格：超大字体，优先使用 TMDB logo，否则使用 TMDB title 或原始 title */}
-          {(currentItem.tmdbData?.logo || currentItem.tmdbLogo) ? (
+          {/* 标题 - Netflix风格：超大字体，有 TMDB logo 就显示图片 */}
+          {currentItem.tmdbLogo ? (
             <div className="relative inline-block max-w-[70%]">
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
-                src={currentItem.tmdbData?.logo || currentItem.tmdbLogo}
-                alt={currentItem.tmdbData?.title || currentItem.title}
+                src={currentItem.tmdbLogo}
+                alt={currentItem.title}
                 className="max-h-16 sm:max-h-20 md:max-h-24 lg:max-h-28 w-auto object-contain"
                 style={{
                   filter: 'drop-shadow(0 0 12px rgba(255,255,255,0.6)) drop-shadow(0 4px 8px rgba(0,0,0,0.9))',
@@ -489,23 +486,21 @@ function HeroBanner({
             </div>
           ) : (
             <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl xl:text-7xl font-bold text-white drop-shadow-2xl leading-tight break-words">
-              {currentItem.tmdbData?.title || currentItem.title}
+              {currentItem.title}
             </h1>
           )}
 
           {/* 元数据 */}
           <div className="flex items-center gap-3 sm:gap-4 text-sm sm:text-base md:text-lg flex-wrap">
-            {(currentItem.tmdbData?.rating || currentItem.rate) && (
+            {currentItem.rate && (
               <div className="flex items-center gap-1.5 px-2.5 py-1 bg-yellow-500/90 backdrop-blur-sm rounded">
                 <span className="text-white font-bold">★</span>
-                <span className="text-white font-bold">
-                  {currentItem.tmdbData?.rating || currentItem.rate}
-                </span>
+                <span className="text-white font-bold">{currentItem.rate}</span>
               </div>
             )}
-            {(currentItem.tmdbData?.year || currentItem.year) && (
+            {currentItem.year && (
               <span className="text-white/90 font-semibold drop-shadow-md">
-                {currentItem.tmdbData?.year || currentItem.year}
+                {currentItem.year}
               </span>
             )}
             {currentItem.type && (
@@ -519,10 +514,10 @@ function HeroBanner({
             )}
           </div>
 
-          {/* 描述 - 限制3行，优先使用 TMDB overview */}
-          {(currentItem.tmdbData?.overview || currentItem.description) && (
+          {/* 描述 - 限制3行 */}
+          {currentItem.description && (
             <p className="text-sm sm:text-base md:text-lg lg:text-xl text-white/90 line-clamp-3 drop-shadow-lg leading-relaxed max-w-xl">
-              {currentItem.tmdbData?.overview || currentItem.description}
+              {currentItem.description}
             </p>
           )}
 

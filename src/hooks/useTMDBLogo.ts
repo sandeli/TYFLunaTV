@@ -15,7 +15,7 @@
 import { useQueries } from '@tanstack/react-query';
 import { useCallback } from 'react';
 
-export interface TMDBData {
+interface TMDBData {
   backdrop: string | null;
   poster: string | null;
   logo: string | null;
@@ -70,46 +70,6 @@ export function useTMDBLogos(items: Array<{ title: string; year?: string; type?:
   return useQueries({
     queries: items.map((item) => ({
       queryKey: ['tmdb-logo', item.title, item.year, item.type],
-      queryFn: () => fetchTMDBData(item.title, item.year, item.type),
-      staleTime: 24 * 60 * 60 * 1000, // 24 hours - TMDB data rarely changes
-      gcTime: 7 * 24 * 60 * 60 * 1000, // 7 days
-      retry: 1, // 失败重试1次
-      enabled: !!item.title, // Only fetch if title exists
-    })),
-    combine,
-  });
-}
-
-/**
- * Hook to fetch complete TMDB data for multiple items using TanStack Query
- * Returns a map of title -> TMDBData
- *
- * @example
- * ```tsx
- * const items = [
- *   { title: '肖申克的救赎', year: '1994', type: 'movie' },
- *   { title: '权力的游戏', year: '2011', type: 'tv' },
- * ];
- * const tmdbData = useTMDBData(items);
- * // tmdbData = { '肖申克的救赎': { logo: '...', title: '...', ... }, ... }
- * ```
- */
-export function useTMDBData(items: Array<{ title: string; year?: string; type?: string }>): Record<string, TMDBData | null> {
-  // 使用 useCallback 缓存 combine 函数，避免每次渲染都重新创建
-  const combine = useCallback((results: any[]) => {
-    // Build a map of title -> complete TMDB data
-    const dataMap: Record<string, TMDBData | null> = {};
-    items.forEach((item, index) => {
-      const result = results[index];
-      dataMap[item.title] = result.data || null;
-    });
-    return dataMap;
-  }, [items]);
-
-  // 使用 useQueries 并行获取所有 TMDB 完整数据
-  return useQueries({
-    queries: items.map((item) => ({
-      queryKey: ['tmdb-data', item.title, item.year, item.type],
       queryFn: () => fetchTMDBData(item.title, item.year, item.type),
       staleTime: 24 * 60 * 60 * 1000, // 24 hours - TMDB data rarely changes
       gcTime: 7 * 24 * 60 * 60 * 1000, // 7 days
