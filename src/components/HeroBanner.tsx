@@ -480,8 +480,7 @@ function HeroBanner({
                 alt={currentItem.title}
                 className="max-h-16 sm:max-h-20 md:max-h-24 lg:max-h-28 w-auto object-contain"
                 style={{
-                  filter: 'drop-shadow(0 4px 12px rgba(0, 0, 0, 0.8)) drop-shadow(0 0 40px rgba(255, 255, 255, 0.4))',
-                  mixBlendMode: 'screen',
+                  filter: 'brightness(0) invert(1) drop-shadow(0 2px 8px rgba(0,0,0,0.8))',
                 }}
               />
             </div>
