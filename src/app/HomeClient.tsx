@@ -15,7 +15,7 @@ import { ShortDramaItem, ReleaseCalendarItem } from '@/lib/types';
 import { useClearFavoritesMutation } from '@/hooks/useFavoritesMutations';
 import { useClearRemindersMutation } from '@/hooks/useRemindersMutations';
 import { useHomePageQueries } from '@/hooks/useHomePageQueries';
-import { useTMDBLogos } from '@/hooks/useTMDBLogo';
+import { useTMDBData } from '@/hooks/useTMDBLogo';
 import { getDoubanDetails } from '@/lib/douban.client';
 import { DoubanItem } from '@/lib/types';
 import { getAuthInfoFromBrowserCookie } from '@/lib/auth';
@@ -358,8 +358,8 @@ function HomeClient({ initialConfig }: {
     }))
   ], [hotMovies, hotTvShows, hotVarietyShows, hotAnime]);
 
-  // 🚀 Fetch TMDB logos for hero banner items
-  const tmdbLogos = useTMDBLogos(
+  // 🚀 Fetch TMDB complete data for hero banner items
+  const tmdbData = useTMDBData(
     heroBannerItems.map(item => ({
       title: item.title,
       year: item.year,
@@ -367,13 +367,15 @@ function HomeClient({ initialConfig }: {
     }))
   );
 
-  // 🚀 Merge TMDB logos into hero banner items
+  // 🚀 Merge TMDB data into hero banner items
   const heroBannerItemsWithLogos = useMemo(() =>
     heroBannerItems.map(item => ({
       ...item,
-      tmdbLogo: tmdbLogos[item.title] || undefined,
+      tmdbData: tmdbData[item.title] || undefined,
+      // 保留 tmdbLogo 以向后兼容
+      tmdbLogo: tmdbData[item.title]?.logo || undefined,
     })),
-    [heroBannerItems, tmdbLogos]
+    [heroBannerItems, tmdbData]
   );
 
   // 🚀 Memoize enableVideo to prevent HeroBanner remount
