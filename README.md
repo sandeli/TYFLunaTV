@@ -25,7 +25,7 @@
 ![HLS.js](https://img.shields.io/badge/HLS.js-1.6.16-ec407a)
 ![License](https://img.shields.io/badge/License-MIT-green)
 ![Docker Ready](https://img.shields.io/badge/Docker-ready-blue?logo=docker)
-![Version](https://img.shields.io/badge/Version-6.6.0-orange)
+![Version](https://img.shields.io/badge/Version-6.6.2-orange)
 
 </div>
 
@@ -33,7 +33,7 @@
 
 ## 📢 项目说明
 
-本项目是在 **MoonTV** 基础上进行的深度二次开发版本，从 **v4.3.1** 版本开始，持续迭代至当前 **v6.6.0**，累计新增 60+ 重大功能模块，400+ 细节优化。所有新增功能详见 [CHANGELOG](CHANGELOG)。
+本项目是在 **MoonTV** 基础上进行的深度二次开发版本，从 **v4.3.1** 版本开始，持续迭代至当前 **v6.6.2**，累计新增 60+ 重大功能模块，400+ 细节优化。所有新增功能详见 [CHANGELOG](CHANGELOG)。
 
 ## ⚠️ 重要声明
 
@@ -52,8 +52,10 @@
 - **Bangumi 动漫**：动漫信息智能检测、API 集成
 - **繁体中文搜索**：智能繁简转换、多策略搜索
 - **搜索列表视图**：支持列表/网格双视图模式切换，列表模式带图片预览和快捷播放
+- **豆瓣快速信息面板**：移动端 ActionSheet 接入豆瓣详情，支持 quick-info 和 suggest API
 
 ### 🎬 播放器增强
+- **TMDB Hero Banner**：播放页以 TMDB backdrop 为主视觉，展示 logo、海报、评分、简介，支持多季徽章
 - **剧集选择器增强**：手动速度测试功能，实时显示源状态徽章（可用/不可用/测试中）
 - **控制栏透明度控制**：可自定义控制栏遮挡度（10-80%），实时调整透明度和模糊效果，改善字幕可见性
 - **快进快退按钮**：可自定义时间间隔的快进快退按钮，Netflix 风格设计，响应式布局
@@ -82,6 +84,7 @@
 ### 📊 性能与监控
 - **性能监控仪表板**：完整的 API 性能监控系统
 - **流量监控系统**：真实流量监控、域名分解
+- **播放统计增强**：记录用户登入 IP、归属地（城市/省份/国家）、设备类型、浏览器及操作系统，管理员可在统计面板查看
 - **Kvrocks 持久化**：高性能缓存系统
 - **TanStack Query 全面集成**：
   - 智能数据缓存和自动重新验证
@@ -158,8 +161,8 @@ pnpm dev
 - **开发语言**：TypeScript 5.8.3
 - **样式方案**：TailwindCSS 4.1.18
 - **视频播放**：ArtPlayer 5.4.0 + HLS.js 1.6.16
-- **状态管理**：TanStack Query 5.100.9（全面迁移完成，优化数据获取和缓存）
-- **数据库**：Upstash Redis + Kvrocks
+- **状态管理**：TanStack Query 5.100.14（全面迁移完成，优化数据获取和缓存）
+- **数据库**：Upstash Redis / Kvrocks / SQLite（三种存储后端可选）
 - **部署方案**：Docker / Vercel / Render
 
 ## 📜 更新日志

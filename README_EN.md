@@ -25,7 +25,7 @@
 ![HLS.js](https://img.shields.io/badge/HLS.js-1.6.16-ec407a)
 ![License](https://img.shields.io/badge/License-MIT-green)
 ![Docker Ready](https://img.shields.io/badge/Docker-ready-blue?logo=docker)
-![Version](https://img.shields.io/badge/Version-6.6.0-orange)
+![Version](https://img.shields.io/badge/Version-6.6.2-orange)
 
 </div>
 
@@ -33,7 +33,7 @@
 
 ## 📢 About
 
-This project is a deep fork of **MoonTV**, starting from **v4.3.1** and continuously iterated to the current **v6.6.0**, with 60+ major feature modules and 400+ detail optimizations. See [CHANGELOG](CHANGELOG) for all new features.
+This project is a deep fork of **MoonTV**, starting from **v4.3.1** and continuously iterated to the current **v6.6.2**, with 60+ major feature modules and 400+ detail optimizations. See [CHANGELOG](CHANGELOG) for all new features.
 
 ## ⚠️ Disclaimer
 
@@ -52,8 +52,10 @@ This project is for educational purposes only. Do not use for commercial purpose
 - **Bangumi Anime**: Intelligent anime detection and API integration
 - **Traditional Chinese Search**: Smart conversion and multi-strategy search
 - **Search List View**: Grid/list dual view mode with image preview and quick play button
+- **Douban Quick Info Panel**: Mobile ActionSheet with Douban details via quick-info and suggest API
 
 ### 🎬 Player Enhancements
+- **TMDB Hero Banner**: Play page uses TMDB backdrop as main visual with logo, poster, rating, overview, and multi-season badge
 - **Episode Selector Enhancement**: Manual speed test feature with real-time source status badges (Available/Unavailable/Testing)
 - **Control Bar Opacity Control**: Customizable control bar obstruction (10-80%), real-time transparency and blur adjustment for better subtitle visibility
 - **Seek Buttons**: Customizable seek forward/backward buttons with Netflix-style design and responsive layout
@@ -82,6 +84,7 @@ This project is for educational purposes only. Do not use for commercial purpose
 ### 📊 Performance & Monitoring
 - **Performance Dashboard**: Complete API performance monitoring
 - **Traffic Monitoring**: Real traffic monitoring and domain analysis
+- **Enhanced Watch Statistics**: Records login IP, geolocation (city/region/country), device type, browser and OS per login — visible to admins in the stats dashboard
 - **Kvrocks Persistence**: High-performance caching system
 - **TanStack Query Full Integration**:
   - Smart data caching and automatic revalidation
@@ -158,8 +161,8 @@ pnpm dev
 - **Language**: TypeScript 5.8.3
 - **Styling**: TailwindCSS 4.1.18
 - **Video Player**: ArtPlayer 5.4.0 + HLS.js 1.6.16
-- **State Management**: TanStack Query 5.100.9 (fully migrated, optimized data fetching and caching)
-- **Database**: Upstash Redis + Kvrocks
+- **State Management**: TanStack Query 5.100.14 (fully migrated, optimized data fetching and caching)
+- **Database**: Upstash Redis / Kvrocks / SQLite (three storage backends available)
 - **Deployment**: Docker / Vercel / Render
 
 ## 📜 Changelog

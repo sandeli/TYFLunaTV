@@ -63,6 +63,7 @@ export class DatabaseCacheManager {
       douban: { count: 0, size: 0, types: {} as Record<string, number> },
       shortdrama: { count: 0, size: 0, types: {} as Record<string, number> },
       tmdb: { count: 0, size: 0, types: {} as Record<string, number> },
+      bangumi: { count: 0, size: 0, types: {} as Record<string, number> },
       danmu: { count: 0, size: 0 },
       netdisk: { count: 0, size: 0 },
       youtube: { count: 0, size: 0 },
@@ -108,6 +109,9 @@ export class DatabaseCacheManager {
           console.warn('❌ KVRocks/Redis存储没有withRetry或client.keys方法');
           return null;
         }
+      } else if (storageType === 'sqlite') {
+        console.log('ℹ️ SQLite不支持缓存统计功能');
+        return null;
       } else {
         console.warn('❌ 不支持的存储类型或无法找到合适的keys方法');
         console.log('🔍 存储类型:', storageType);
@@ -176,6 +180,9 @@ export class DatabaseCacheManager {
             }
           }
         }
+      } else if (storageType === 'sqlite') {
+        console.log('ℹ️ SQLite不支持缓存统计功能');
+        return null;
       } else {
         // 通用回退：逐个获取
         console.warn('使用通用回退方法逐个获取缓存数据');
@@ -212,9 +219,14 @@ export class DatabaseCacheManager {
         if (key.startsWith('douban-')) {
           stats.douban.count++;
           stats.douban.size += size;
-
           const type = key.split('-')[1];
           stats.douban.types[type] = (stats.douban.types[type] || 0) + 1;
+        }
+        else if (key.startsWith('bangumi-')) {
+          stats.bangumi.count++;
+          stats.bangumi.size += size;
+          const type = key.split('-')[1];
+          stats.bangumi.types[type] = (stats.bangumi.types[type] || 0) + 1;
         }
         else if (key.startsWith('shortdrama-')) {
           stats.shortdrama.count++;
@@ -291,6 +303,7 @@ export class DatabaseCacheManager {
       douban: { count: 0, size: 0, types: {} as Record<string, number> },
       shortdrama: { count: 0, size: 0, types: {} as Record<string, number> },
       tmdb: { count: 0, size: 0, types: {} as Record<string, number> },
+      bangumi: { count: 0, size: 0, types: {} as Record<string, number> },
       danmu: { count: 0, size: 0 },
       netdisk: { count: 0, size: 0 },
       youtube: { count: 0, size: 0 },
@@ -324,9 +337,14 @@ export class DatabaseCacheManager {
         if (key.startsWith('douban-')) {
           stats.douban.count++;
           stats.douban.size += size;
-
           const type = key.split('-')[1];
           stats.douban.types[type] = (stats.douban.types[type] || 0) + 1;
+        }
+        else if (key.startsWith('bangumi-')) {
+          stats.bangumi.count++;
+          stats.bangumi.size += size;
+          const type = key.split('-')[1];
+          stats.bangumi.types[type] = (stats.bangumi.types[type] || 0) + 1;
         }
         else if (key.startsWith('shortdrama-')) {
           stats.shortdrama.count++;
@@ -374,6 +392,7 @@ export class DatabaseCacheManager {
         douban: formatBytes(stats.douban.size),
         shortdrama: formatBytes(stats.shortdrama.size),
         tmdb: formatBytes(stats.tmdb.size),
+        bangumi: formatBytes(stats.bangumi.size),
         danmu: formatBytes(stats.danmu.size),
         netdisk: formatBytes(stats.netdisk.size),
         youtube: formatBytes(stats.youtube.size),
@@ -384,7 +403,7 @@ export class DatabaseCacheManager {
   }
 
   // 清理指定类型的缓存
-  static async clearCacheByType(type: 'douban' | 'shortdrama' | 'tmdb' | 'danmu' | 'netdisk' | 'youtube' | 'bilibili'): Promise<number> {
+  static async clearCacheByType(type: 'douban' | 'shortdrama' | 'tmdb' | 'bangumi' | 'danmu' | 'netdisk' | 'youtube' | 'bilibili'): Promise<number> {
     let clearedCount = 0;
     
     try {
@@ -392,6 +411,10 @@ export class DatabaseCacheManager {
         case 'douban':
           await db.clearExpiredCache('douban-');
           console.log('🗑️ 豆瓣缓存清理完成');
+          break;
+        case 'bangumi':
+          await db.clearExpiredCache('bangumi-');
+          console.log('🗑️ Bangumi缓存清理完成');
           break;
         case 'shortdrama':
           await db.clearExpiredCache('shortdrama-');

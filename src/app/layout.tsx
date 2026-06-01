@@ -11,6 +11,7 @@ import './globals.css';
 import { getConfig } from '@/lib/config';
 
 import { GlobalErrorIndicator } from '../components/GlobalErrorIndicator';
+import { GlobalDOMErrorHandler } from '../components/GlobalDOMErrorHandler';
 import { ChunkErrorGuard } from '../components/ChunkErrorGuard';
 import NavigationShell from '../components/NavigationShell';
 import { SessionTracker } from '../components/SessionTracker';
@@ -132,13 +133,14 @@ export default async function RootLayout({
   };
 
   return (
-    <html lang='zh-CN' suppressHydrationWarning>
+    <html lang='zh-CN' translate='no' suppressHydrationWarning>
       <head>
         <meta
           name='viewport'
           content='width=device-width, initial-scale=1.0, viewport-fit=cover'
         />
         <meta name='color-scheme' content='light dark' />
+        <meta name='google' content='notranslate' />
         <link rel='apple-touch-icon' href='/icons/icon-192x192.png' />
         {/* 将配置序列化后直接写入脚本，浏览器端可通过 window.RUNTIME_CONFIG 获取 */}
         {/* eslint-disable-next-line @next/next/no-sync-scripts */}
@@ -149,6 +151,7 @@ export default async function RootLayout({
         />
       </head>
       <body
+        translate='no'
         className={`${inter.className} min-h-screen bg-white text-gray-900 dark:bg-black dark:text-gray-200`}
       >
         <ThemeProvider
@@ -162,6 +165,7 @@ export default async function RootLayout({
               <DownloadProvider>
                 <WatchRoomProvider>
                   <SiteProvider siteName={siteName} announcement={announcement}>
+                    <GlobalDOMErrorHandler />
                     <ChunkErrorGuard />
                     <SessionTracker />
                     <RouteWarmup />
