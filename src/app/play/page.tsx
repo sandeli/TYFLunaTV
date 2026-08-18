@@ -2108,7 +2108,8 @@ function PlayPageClient() {
       if (!hls || hls.audioTrack === track.hlsIndex) return;
 
       try {
-        hls.audioTrack = track.hlsIndex;
+        // v1.7.0: nextAudioTrack 走调度式切换，避免 hls.audioTrack 直接赋值造成的卡顿/直播延迟增加
+        hls.nextAudioTrack = track.hlsIndex;
         setCurrentAudioTrack(track.hlsIndex);
         savePreferredAudioLang(track.language);
       } catch (error) {
@@ -4461,8 +4462,10 @@ function PlayPageClient() {
             const hls = new Hls({
               debug: false,
               enableWorker: true,
-              // 参考 HLS.js config.ts：移动设备关闭低延迟模式以节省资源
-              lowLatencyMode: !isMobile,
+              // 关闭低延迟模式以改善点播体验 - Issue #194
+              // HLS.js 默认 lowLatencyMode: true，主要为 LL-HLS 直播流设计
+              // 点播场景下会导致：缓冲区过小、网络波动时容易卡顿、CPU 负担增加
+              lowLatencyMode: false,
 
               // 🎯 官方推荐的缓冲策略 - iOS13+ 特别优化
               /* 缓冲长度配置 - 参考 hlsDefaultConfig - 桌面设备应用用户配置 */
@@ -4485,6 +4488,9 @@ function PlayPageClient() {
               /* Fragment管理 - 参考官方配置 */
               liveDurationInfinity: false, // 避免无限缓冲 (官方默认false)
               liveBackBufferLength: isMobile ? (localIsIOS13 ? 3 : 5) : null, // 已废弃，保持兼容
+
+              // v1.7.0 新增：appendBuffer 卡死超时兜底，避免个别设备 SourceBuffer 无响应导致播放静默卡住不报错
+              appendTimeout: isMobile ? 8000 : 10000,
 
               /* 高级优化配置 - 参考 StreamControllerConfig */
               maxMaxBufferLength: isMobile ? (localIsIOS13 ? 60 : 120) : 600, // 最大缓冲长度限制
@@ -4566,7 +4572,7 @@ function PlayPageClient() {
                   t => normalizeAudioLang(t.language) === preferredLang
                 );
                 if (preferredTrack && typeof preferredTrack.hlsIndex === 'number' && preferredTrack.hlsIndex !== activeHlsIndex) {
-                  hls.audioTrack = preferredTrack.hlsIndex;
+                  hls.nextAudioTrack = preferredTrack.hlsIndex;
                 }
               }
             });
